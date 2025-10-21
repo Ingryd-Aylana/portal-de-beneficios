@@ -1,0 +1,95 @@
+.sidebar {
+  position: sticky;
+  top: 0;
+  align-self: start;
+  background-color: #0F3D5D;
+  color: #ffffff;
+  width: 260px;
+  height: 100dvh;
+  flex: 0 0 260px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  padding: 20px 16px;
+  box-sizing: border-box;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.25);
+  border-radius: 999px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.35);
+}
+
+.sidebar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.35) transparent;
+}
+
+.logo-sidebar {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.logoImg {
+  width: 200px !important;
+  max-width: 100%;
+  height: auto;
+  object-fit: contain;
+}
+
+.nav {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-grow: 1;
+}
+
+.nav a {
+  color: #e5e7eb;
+  text-decoration: none;
+  padding: 10px 12px;
+  border-radius: 8px;
+  font-size: 15px;
+  transition: background 0.2s, color 0.2s;
+  outline: none;
+}
+
+.nav a:hover,
+.nav a.active,
+.nav a:focus-visible {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}
+
+.logout-section {
+  margin-top: auto;
+  padding-top: 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.logout-link {
+  display: block;
+  color: #ffdddd;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 10px 12px;
+  border-radius: 8px;
+  transition: background 0.2s, color 0.2s;
+}
+
+.logout-link:hover,
+.logout-link:focus-visible {
+  background-color: rgba(255, 255, 255, 0.15);
+  color: #ffffff;
+}

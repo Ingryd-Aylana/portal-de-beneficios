@@ -1,0 +1,178 @@
+.historico-page {
+  display: grid;
+  gap: 16px;
+}
+
+/* Header + filtros */
+.historico-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 22px;
+  font-weight: 800;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(120px, 180px)) 1fr auto;
+  gap: 10px;
+  align-items: end;
+}
+
+.filters .field {
+  display: grid;
+  gap: 6px;
+}
+
+.filters .field label {
+  font-size: 12px;
+  color: var(--muted);
+  margin-left: 4px;
+}
+
+.filters .field input,
+.filters .field select {
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+}
+
+.filters .field.grow {
+  grid-column: auto / span 1;
+}
+
+.filters .field.grow input {
+  width: 100%;
+}
+
+.filters .actions {
+  display: flex;
+  gap: 8px;
+}
+
+.filters .button {
+  height: 36px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  cursor: pointer;
+}
+
+.filters .button.ghost {
+  background: transparent;
+}
+
+/* Cards resumo */
+.hist-cards {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.hist-card {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 14px;
+}
+
+.hist-card-title {
+  font-size: 12px;
+  color: var(--muted);
+  margin-bottom: 6px;
+  font-weight: 700;
+}
+
+.hist-card-value {
+  font-size: 24px;
+  font-weight: 800;
+}
+
+.text-success { color: #10b981; }
+.text-info { color: #3b82f6; }
+.text-danger { color: #ef4444; }
+
+/* Chips e status */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid var(--border);
+  background: rgba(2,6,23,.02);
+}
+
+.chip--importação,
+.chip--importacao { /* caso sem acento em alguma origem */
+  background: rgba(59,130,246,.12);
+  color: #1d4ed8;
+  border-color: rgba(59,130,246,.25);
+}
+
+.chip--faturamento {
+  background: rgba(16,185,129,.12);
+  color: #047857;
+  border-color: rgba(16,185,129,.25);
+}
+
+/* aproveita as classes .status existentes do app */
+.status.sucesso {
+  background: rgba(16,185,129,.12);
+  color: #10b981;
+  border: 1px solid rgba(16,185,129,.3);
+  padding: 4px 8px; border-radius: 999px; font-size: 12px;
+}
+.status.erro {
+  background: rgba(239,68,68,.12);
+  color: #ef4444;
+  border: 1px solid rgba(239,68,68,.3);
+  padding: 4px 8px; border-radius: 999px; font-size: 12px;
+}
+.status.processando {
+  background: rgba(59,130,246,.12);
+  color: #3b82f6;
+  border: 1px solid rgba(59,130,246,.3);
+  padding: 4px 8px; border-radius: 999px; font-size: 12px;
+}
+.status.aberto {
+  background: rgba(245,158,11,.12);
+  color: #f59e0b;
+  border: 1px solid rgba(245,158,11,.3);
+  padding: 4px 8px; border-radius: 999px; font-size: 12px;
+}
+.status.fechado {
+  background: rgba(148,163,184,.2);
+  color: #334155;
+  border: 1px solid rgba(148,163,184,.35);
+  padding: 4px 8px; border-radius: 999px; font-size: 12px;
+}
+
+/* Responsivo */
+@media (max-width: 1100px) {
+  .filters {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
+    grid-auto-rows: auto;
+  }
+  .filters .field.grow {
+    grid-column: 1 / -1;
+  }
+  .filters .actions {
+    grid-column: 1 / -1;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .hist-cards {
+    grid-template-columns: repeat(2, minmax(140px, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .hist-cards {
+    grid-template-columns: 1fr 1fr;
+  }
+}
