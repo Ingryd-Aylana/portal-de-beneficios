@@ -1,9 +1,31 @@
+/* ==========================================================================
+   Importação de Arquivos — Estilos completos
+   ========================================================================== */
+
+/* ---------- Reset/Primitives (opcional leve) ---------- */
+:root {
+    --panel: #ffffff;
+    --border: #e2e8f0;
+    --muted: #6b7280;
+}
+
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+}
+
+/* ==========================================================================
+   Container principal
+   ========================================================================== */
 .importacao-container {
     padding: 24px;
     max-width: 1400px;
     margin: 0 auto;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
+/* Header (se usado em outras páginas) */
 .importacao-header {
     display: flex;
     justify-content: space-between;
@@ -18,12 +40,16 @@
     color: #1a1a1a;
 }
 
+/* ==========================================================================
+   Upload Card / Área de Upload (FileUpload)
+   ========================================================================== */
 .upload-card {
     background: #fff;
     border-radius: 16px;
     padding: 32px;
     margin-bottom: 24px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, .1);
+    border: 1px solid #eaeaea;
 }
 
 .upload-header {
@@ -96,6 +122,7 @@
     margin: 0;
 }
 
+/* Status do upload (sucesso/erro/processando) */
 .upload-status {
     margin-top: 20px;
     padding: 16px;
@@ -103,21 +130,7 @@
     display: flex;
     align-items: center;
     gap: 16px;
-}
-
-.upload-status.sucesso {
-    background: #f0fdf4;
-    border: 2px solid #86efac;
-}
-
-.upload-status.erro {
-    background: #fef2f2;
-    border: 2px solid #fca5a5;
-}
-
-.upload-status.processando {
-    background: #eff6ff;
-    border: 2px solid #93c5fd;
+    border: 2px solid transparent;
 }
 
 .upload-status-content {
@@ -134,6 +147,21 @@
     font-size: 14px;
     color: #64748b;
     margin: 0;
+}
+
+.upload-status.sucesso {
+    background: #f0fdf4;
+    border-color: #86efac;
+}
+
+.upload-status.erro {
+    background: #fef2f2;
+    border-color: #fca5a5;
+}
+
+.upload-status.processando {
+    background: #eff6ff;
+    border-color: #93c5fd;
 }
 
 .status-badge {
@@ -175,11 +203,387 @@
     }
 }
 
+/* ==========================================================================
+   Cards de Totais (KPI) — histórico
+   ========================================================================== */
+.importacao-totais {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 16px;
+    margin-top: 24px;
+    margin-bottom: 24px;
+}
+
+.importacao-card {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.importacao-card h3 {
+    font-size: 15px;
+    color: var(--muted);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.importacao-card .valor {
+    font-size: 32px;
+    font-weight: 800;
+    margin: 0;
+    color: #111;
+}
+
+.importacao-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
+}
+
+.importacao-card.compra {
+    border-color: rgba(37, 99, 235, 0.3);
+    background: rgba(37, 99, 235, 0.05);
+}
+
+.importacao-card.compra .valor {
+    color: #2563eb;
+}
+
+.importacao-card.faturamento {
+    border-color: rgba(16, 185, 129, 0.3);
+    background: rgba(16, 185, 129, 0.05);
+}
+
+.importacao-card.faturamento .valor {
+    color: #059669;
+}
+
+/* ==========================================================================
+   Cartão do Lote Atual (pré-validação)
+   ========================================================================== */
+.lote-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 16px 20px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+    border: 1px solid #eaeaea;
+}
+
+.lote-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-bottom: 12px;
+    border-bottom: 2px solid #f5f5f5;
+    margin-bottom: 16px;
+}
+
+.lote-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #1a1a1a;
+}
+
+.lote-header small {
+    color: #666;
+}
+
+/* KPIs do lote */
+.lote-kpis {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+    margin-bottom: 12px;
+}
+
+.kpi {
+    background: #fafafa;
+    border: 1px solid #f0f0f0;
+    border-radius: 10px;
+    padding: 12px;
+}
+
+.kpi-label {
+    display: block;
+    font-size: 12px;
+    color: #666;
+    margin-bottom: 6px;
+}
+
+.kpi-value {
+    font-weight: 700;
+    font-size: 20px;
+    color: #111;
+}
+
+.kpi-alert {
+    background: #fff7f7;
+    border-color: #ffe2e2;
+}
+
+.kpi-alert .kpi-value {
+    color: #b91c1c;
+}
+
+/* Banner de bloqueios */
+.bloqueios-banner {
+    border: 1px dashed #fca5a5;
+    background: #fff7f7;
+    border-radius: 10px;
+    padding: 12px;
+    margin: 12px 0 16px;
+    color: #7f1d1d;
+}
+
+.bloqueios-banner .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.chip-row {
+    display: flex;
+    gap: 8px;
+}
+
+/* Chips */
+.chip {
+    border: 1px solid transparent;
+    border-radius: 9999px;
+    padding: 6px 12px;
+    font-size: 12px;
+    cursor: pointer;
+}
+
+.chip-danger {
+    background: #fee2e2;
+    border-color: #fecaca;
+    color: #991b1b;
+}
+
+.chip-ghost {
+    background: #f8fafc;
+    border-color: #e2e8f0;
+    color: #334155;
+}
+
+/* ==========================================================================
+   Tabela de Pré-visualização
+   ========================================================================== */
+.tabela-wrapper {
+    overflow: auto;
+    border-radius: 10px;
+    border: 1px solid #eee;
+}
+
+.tabela-importacao {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: #fff;
+}
+
+.tabela-importacao thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+    background: #fafafa;
+    color: #444;
+    font-weight: 600;
+    font-size: 12px;
+    text-align: left;
+    padding: 12px;
+    border-bottom: 1px solid #eee;
+    user-select: none;
+}
+
+.tabela-importacao tbody td {
+    padding: 12px;
+    border-bottom: 1px solid #f5f5f5;
+    font-size: 14px;
+    color: #1f2937;
+}
+
+.tabela-importacao tbody tr:last-child td {
+    border-bottom: none;
+}
+
+.col-valor {
+    width: 160px;
+}
+
+.col-status {
+    width: 120px;
+}
+
+.col-acoes {
+    width: 220px;
+}
+
+/* espaço para editar + excluir */
+
+.row-bloqueado {
+    background: #fff7f7;
+}
+
+.row-bloqueado td {
+    border-bottom-color: #ffe2e2;
+}
+
+/* Tags de status */
+.tag {
+    display: inline-block;
+    padding: 4px 8px;
+    border-radius: 9999px;
+    font-size: 12px;
+    border: 1px solid transparent;
+}
+
+.tag-ok {
+    background: #ecfdf5;
+    border-color: #d1fae5;
+    color: #065f46;
+}
+
+.tag-danger {
+    background: #fee2e2;
+    border-color: #fecaca;
+    color: #991b1b;
+}
+
+/* Edição inline (valor) */
+.edit-inline {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.input-valor {
+    width: 110px;
+    padding: 6px 8px;
+    border-radius: 8px;
+    border: 1px solid #e5e7eb;
+    background: #fff;
+    font-size: 14px;
+    outline: none;
+    color: #111;
+    /* garante contraste mesmo em temas escuros */
+}
+
+.row-bloqueado .input-valor {
+    background: #fff;
+    /* evita herdar fundo rosado */
+    color: #111;
+}
+
+.input-valor:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, .15);
+}
+
+/* Ações (editar/salvar/cancelar/excluir) */
+.edit-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.acoes-inline {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+/* ==========================================================================
+   Botões (variações)
+   ========================================================================== */
+button {
+    cursor: pointer;
+}
+
+.btn-primary {
+    background: #3b82f6;
+    color: #fff;
+    border: 1px solid #3b82f6;
+    padding: 10px 14px;
+    border-radius: 10px;
+    font-weight: 600;
+}
+
+.btn-primary:disabled {
+    background: #9db7f8;
+    border-color: #9db7f8;
+    cursor: not-allowed;
+}
+
+.btn-outline {
+    background: #fff;
+    color: #374151;
+    border: 1px solid #e5e7eb;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.btn-ghost {
+    background: transparent;
+    color: #374151;
+    border: 1px solid transparent;
+    padding: 8px 10px;
+    border-radius: 8px;
+    font-weight: 600;
+}
+
+.btn-sm {
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+}
+
+/* Botão com ícone + texto (usado em Editar/Excluir/Salvar/Cancelar) */
+.btn-icon {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    line-height: 1;
+}
+
+.btn-icon.danger {
+    border-color: #fecaca;
+    color: #991b1b;
+}
+
+.btn-icon.danger:hover {
+    background: #fee2e2;
+}
+
+/* ==========================================================================
+   Ações do lote
+   ========================================================================== */
+.lote-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.hint {
+    color: #6b7280;
+    font-size: 13px;
+}
+
+/* ==========================================================================
+   Tabela “genérica” (seções legado: table-card / data-table)
+   — Mantido para compatibilidade com páginas que reutilizam estes estilos
+   ========================================================================== */
 .table-card {
     background: #fff;
     border-radius: 16px;
     padding: 24px;
     box-shadow: 0 1px 3px rgba(0, 0, 0, .1);
+    border: 1px solid #e2e8f0;
 }
 
 .table-header {
@@ -212,6 +616,12 @@
     border-radius: 10px;
     font-size: 15px;
     transition: all .2s;
+    background: #fff;
+    color: #0f172a;
+}
+
+.search-input::placeholder {
+    color: #94a3b8;
 }
 
 .search-input:focus {
@@ -250,6 +660,7 @@
     box-shadow: 0 4px 12px rgba(16, 185, 129, .4);
 }
 
+/* wrapper da “data-table” legado */
 .table-wrapper {
     overflow-x: auto;
     border-radius: 12px;
@@ -314,6 +725,85 @@
     color: #94a3b8;
 }
 
+/* ==========================================================================
+   Modal (genérico)
+   ========================================================================== */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, .35);
+    display: grid;
+    place-items: center;
+    z-index: 50;
+}
+
+.modal-card {
+    width: 100%;
+    max-width: 560px;
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #eaeaea;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .15);
+}
+
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 14px 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 16px;
+}
+
+.modal-body {
+    padding: 16px;
+}
+
+.form-grid {
+    display: grid;
+    gap: 12px;
+}
+
+.form-grid label {
+    display: grid;
+    gap: 6px;
+    font-size: 13px;
+    color: #374151;
+}
+
+.form-grid input {
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #e5e7eb;
+    font-size: 14px;
+    background: #fff;
+    color: #0f172a;
+}
+
+.form-grid input::placeholder {
+    color: #94a3b8;
+}
+
+.modal-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 8px;
+}
+
+/* ==========================================================================
+   Responsivo
+   ========================================================================== */
+@media (max-width: 1024px) {
+    .importacao-container {
+        padding: 20px;
+    }
+}
+
 @media (max-width: 768px) {
     .importacao-container {
         padding: 16px;
@@ -337,54 +827,22 @@
     }
 }
 
-.importacao-totais {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 16px;
-  margin-top: 24px;
-}
+@media (max-width: 720px) {
+    .importacao-totais {
+        grid-template-columns: 1fr;
+    }
 
-.importacao-card {
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 20px;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
+    .lote-kpis {
+        grid-template-columns: 1fr;
+    }
 
-.importacao-card h3 {
-  font-size: 15px;
-  color: var(--muted);
-  margin-bottom: 8px;
-  font-weight: 600;
-}
+    .col-acoes {
+        width: 140px;
+    }
 
-.importacao-card .valor {
-  font-size: 32px;
-  font-weight: 800;
-  margin: 0;
-}
+    .btn-icon .btn-text {
+        display: none;
+    }
 
-.importacao-card:hover {
-  transform: translateY(-3px);
-  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.08);
-}
-
-.importacao-card.compra {
-  border-color: rgba(37, 99, 235, 0.3);
-  background: rgba(37, 99, 235, 0.05);
-}
-
-.importacao-card.compra .valor {
-  color: #2563eb;
-}
-
-.importacao-card.faturamento {
-  border-color: rgba(16, 185, 129, 0.3);
-  background: rgba(16, 185, 129, 0.05);
-}
-
-.importacao-card.faturamento .valor {
-  color: #059669;
+    /* em telas pequenas, mostra só ícone */
 }
