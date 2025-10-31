@@ -30,6 +30,7 @@ export default function Sidebar() {
         <NavLink to="/faturamento" className={({ isActive }) => (isActive ? 'active' : '')}>Faturamento</NavLink>
         <NavLink to="/pendentes" className={({ isActive }) => (isActive ? 'active' : '')}>Pendentes</NavLink>
         <NavLink to="/historico" className={({ isActive }) => (isActive ? 'active' : '')}>Histórico</NavLink>
+        <NavLink to="/relatorios" className={({ isActive }) => (isActive ? 'active' : '')}>Relatórios</NavLink>
         <NavLink to="/configuracoes" className={({ isActive }) => (isActive ? 'active' : '')}>Configurações</NavLink>
 
         <div className="logout-section">
