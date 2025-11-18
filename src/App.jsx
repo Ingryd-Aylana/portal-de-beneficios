@@ -7,7 +7,10 @@ import Importacao from './pages/Importacao.jsx'
 import Faturamento from './pages/Faturamento.jsx'
 import Pendentes from './pages/Pendentes.jsx'
 import Historico from './pages/Historico.jsx'
-import Login from './pages/Login.jsx'
+import HistoricoCondominio from './pages/HistoricoCondominio.jsx'
+import AdicionarColaboradores from './pages/AdicionarColaboradores.jsx'
+import Login from './pages/Login/Login.jsx'
+import EsqueciSenha from './pages/Login/EsqueciSenha.jsx'
 import ConfiguracaoCondominios from './pages/Configuracoes.jsx'
 import { AuthProvider, useAuth } from './context/AuthContext.jsx'
 import ProtectedRoute from './routes/ProtectedRoute.jsx'
@@ -34,6 +37,11 @@ function Layout() {
             <Route path="/faturamento" element={<Faturamento />} />
             <Route path="/pendentes" element={<Pendentes />} />
             <Route path="/historico" element={<Historico />} />
+            <Route path="/historico-condominio/:id" element={<HistoricoCondominio />} />
+            <Route
+              path="/historico-condominio/:id/colaboradores/adicionar"
+              element={<AdicionarColaboradores />}
+            />
             <Route path="/configuracoes" element={<ConfiguracaoCondominios />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
@@ -48,6 +56,7 @@ export default function App() {
     <AuthProvider>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/esqueci-senha" element={<EsqueciSenha />} />
         <Route element={
           <ProtectedRoute>
             <Layout />

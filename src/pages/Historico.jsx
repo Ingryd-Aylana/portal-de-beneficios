@@ -105,10 +105,6 @@ export default function Historico() {
           </div>
 
           <div className="actions">
-            <button className="button ghost" onClick={setHoje}>Hoje</button>
-            <button className="button ghost" onClick={set7d}>7 dias</button>
-            <button className="button ghost" onClick={set30d}>30 dias</button>
-         
             <button className="button" onClick={limpar}>Limpar</button>
           </div>
         </div>

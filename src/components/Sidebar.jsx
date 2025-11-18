@@ -17,7 +17,7 @@ export default function Sidebar() {
       
       <div className="logo-sidebar">
         <img
-          src="https://i.postimg.cc/286V70R2/logo2.png"
+          src="src\public\imagens\logo2.png"
           alt="Fedcorp Logo"
           className="logoImg"
         />
