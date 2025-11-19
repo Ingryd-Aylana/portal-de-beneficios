@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react'
-import { CheckCircle, XCircle, Clock, Send, Building2, Users, Calendar } from 'lucide-react'
+import { CheckCircle, XCircle, Clock, Send, Building2, Users, Calendar, Search } from 'lucide-react'
 import '../styles/Pendentes.css'
 
 const pendenciasKanban = [
@@ -16,8 +16,8 @@ const pendenciasKanban = [
 export default function Pendentes() {
   const [pendencias, setPendencias] = useState(pendenciasKanban)
   const [enviandoFaturamento, setEnviandoFaturamento] = useState(null)
-
   const [toast, setToast] = useState({ open: false, message: '' })
+  const [search, setSearch] = useState('')
 
   const showToast = (message) => {
     setToast({ open: true, message })
@@ -25,11 +25,37 @@ export default function Pendentes() {
     showToast._t = window.setTimeout(() => setToast({ open: false, message: '' }), 2500)
   }
 
+  const searchLower = search.trim().toLowerCase()
+
+  // aplica filtro de busca em todas as pendências
+  const pendenciasFiltradas = useMemo(() => {
+    if (!searchLower) return pendencias
+
+    return pendencias.filter(p => {
+      const text = [
+        p.id,
+        p.tipo,
+        p.descricao,
+        p.condominio,
+        p.origem,
+        p.cnpj,
+        p.status,
+        p.valor
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+
+      return text.includes(searchLower)
+    })
+  }, [pendencias, searchLower])
+
+  // monta as colunas com base no resultado filtrado
   const colunas = useMemo(() => ({
-    cancelado: pendencias.filter(p => p.status === 'cancelado'),
-    pendente:  pendencias.filter(p => p.status === 'pendente'),
-    pago:      pendencias.filter(p => p.status === 'pago'),
-  }), [pendencias])
+    cancelado: pendenciasFiltradas.filter(p => p.status === 'cancelado'),
+    pendente:  pendenciasFiltradas.filter(p => p.status === 'pendente'),
+    pago:      pendenciasFiltradas.filter(p => p.status === 'pago'),
+  }), [pendenciasFiltradas])
 
   const handleEnviarFaturamento = (id) => {
     setEnviandoFaturamento(id)
@@ -119,6 +145,26 @@ export default function Pendentes() {
 
   return (
     <div className="kp-page">
+      {/* Filtro de busca no topo */}
+      <div className="kp-toolbar">
+        <div className="filters-row">
+          <div className="filter-group">
+            <label>Buscar</label>
+            <div className="input-with-icon">
+              <span className="input-icon">
+                <Search size={16} />
+              </span>
+              <input
+                type="text"
+                placeholder="Busque por condomínio, tipo, descrição..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div className="kb-board">
         <Coluna
           titulo="Cancelados"

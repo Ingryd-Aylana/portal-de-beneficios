@@ -1,6 +1,12 @@
-
 .kp-page {
   padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 80px);
+   overflow-x: hidden;
 }
 
 .kp-header h1 {
@@ -9,6 +15,7 @@
   font-weight: 800;
   color: var(--text);
 }
+
 .kp-header p {
   margin: 0 0 16px 0;
   color: var(--muted);
@@ -19,6 +26,9 @@
   gap: 16px;
   overflow-x: auto;
   padding-bottom: 8px;
+  flex: 1 1 auto;
+  height: calc(100vh - 220px);
+  overflow-x: visible;
 }
 
 .kb-col {
@@ -28,7 +38,7 @@
   flex-direction: column;
   background: #f8fafc;
   border-radius: 12px;
-  height: 80vh; 
+  max-height: 98%;
 }
 
 .kb-col-header {
@@ -40,20 +50,24 @@
   top: 0;
   z-index: 5;
 }
+
 .kb-col-headline {
   display: flex;
   align-items: center;
   gap: 10px;
 }
+
 .kb-ico-head {
   width: 20px;
   height: 20px;
 }
+
 .kb-col-header h2 {
   margin: 0;
   font-size: 18px;
   font-weight: 800;
 }
+
 .kb-badge {
   margin-left: auto;
   background: rgba(255,255,255,.35);
@@ -70,12 +84,14 @@
 
 .kb-col-body {
   flex: 1 1 auto;
+  min-height: 0;
   overflow-y: auto;
   padding: 16px;
   border-radius: 0 0 12px 12px;
   scrollbar-width: thin;
   scrollbar-color: #cbd5e1 transparent;
 }
+
 .kb-col-body::-webkit-scrollbar { width: 8px; }
 .kb-col-body::-webkit-scrollbar-thumb {
   background: #cbd5e1;
@@ -90,10 +106,12 @@
   padding: 16px;
   transition: box-shadow .15s ease;
 }
+
 .kp-card + .kp-card { margin-top: 12px; }
 .kp-card:hover { box-shadow: 0 4px 16px rgba(2,6,23,.06); }
 
 .kp-card-top { margin-bottom: 10px; }
+
 .kp-tag {
   display: inline-block;
   padding: 4px 8px;
@@ -104,6 +122,7 @@
   color: #1e40af; 
   margin-bottom: 6px;
 }
+
 .kp-title {
   margin: 0;
   font-size: 14px;
@@ -139,6 +158,7 @@
   cursor: pointer;
   transition: background .15s ease, transform .05s ease;
 }
+
 .kp-btn-submit:hover  { background: #15803d; }
 .kp-btn-submit:active { transform: translateY(1px); }
 .kp-btn-submit:disabled { opacity: .6; cursor: not-allowed; }
@@ -153,6 +173,7 @@
   border-radius: 50%;
   animation: kpspin 1s linear infinite;
 }
+
 @keyframes kpspin {
   from { transform: rotate(0deg); }
   to   { transform: rotate(360deg); }
@@ -165,23 +186,27 @@
   font-size: 14px;
 }
 
+/* Responsivo */
 @media (max-width: 800px) {
-  .kb-col { min-width: 260px; height: 70vh; } 
+  .kb-col { 
+    min-width: 260px; 
+    /* tira o 70vh também */
+    max-height: 100%;
+  } 
   .kp-page { padding: 16px; }
 }
 
-
-/* ===== Toast ===== */
 .toast-wrap {
   position: fixed;
   right: 20px;
   bottom: 20px;
   z-index: 9999;
-  pointer-events: none;              /* clique passa por trás */
+  pointer-events: none;
   transform: translateY(8px);
   opacity: 0;
   transition: opacity .2s ease, transform .2s ease;
 }
+
 .toast-wrap.show {
   opacity: 1;
   transform: translateY(0);
@@ -198,7 +223,7 @@
   background: #fff;             
   color: var(--text);
   border: 1px solid var(--border);
-  pointer-events: auto;              
+  pointer-events: auto;
 }
 
 .toast-success {
@@ -210,4 +235,79 @@
 .toast-ico {
   width: 18px;
   height: 18px;
+}
+
+
+/* Toolbar / Filtro de busca */
+.kp-toolbar {
+  margin-bottom: 20px;
+  padding: 16px 20px;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.07);
+}
+
+.filters-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.filter-group {
+  min-width: 240px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.filter-group label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6b7280;
+}
+
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-with-icon input {
+  width: 100%;
+  padding: 8px 12px 8px 34px;
+  border-radius: 8px;
+  border: 1px solid #d1d5db;
+  background: #f9fafb;
+  font-size: 14px;
+  color: #111827;
+  outline: none;
+  transition:
+    border-color 0.15s ease,
+    box-shadow 0.15s ease,
+    background-color 0.15s ease;
+}
+
+.input-with-icon input::placeholder {
+  color: #9ca3af;
+}
+
+.input-with-icon input:focus {
+  border-color: #3b82f6;
+  background: #ffffff;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35);
+}
+
+.input-icon {
+  position: absolute;
+  left: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  font-size: 14px;
+  color: #9ca3af;
 }
