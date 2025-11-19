@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext.jsx'
-import Carousel from '../components/Carousel.jsx'
-import '../styles/Login.css'
+import { useAuth } from '../../context/AuthContext.jsx'
+import Carousel from '../../components/Carousel.jsx'
+import '../../styles/Login.css'
 
 export default function Login() {
   const [username, setUsername] = useState('')
@@ -22,6 +22,10 @@ export default function Login() {
       setError(res.error || 'Falha no login')
     }
   }
+
+  function handleEsqueciSenha() {
+       navigate('/esqueci-senha')
+     }
 
   return (
     <div className="login-shell">
@@ -59,7 +63,7 @@ export default function Login() {
             <button
               type="button"
               className="button ghost"
-              onClick={() => alert('Fluxo de recuperação de senha ainda não implementado.')}
+              onClick={handleEsqueciSenha}
             >
               Esqueci a Senha
             </button>
