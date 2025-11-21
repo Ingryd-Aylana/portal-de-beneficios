@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect, useRef } from 'react'
 import FileUpload from '../components/FileUpload'
 import { PencilLine, Trash2, Check, X as XIcon } from 'lucide-react'
 import '../styles/Importacao.css'
@@ -49,19 +49,22 @@ const MESES = [
 
 function rangeAnos(qtd = 6) {
   const anoAtual = new Date().getFullYear()
-    return Array.from({ length: qtd }, (_, i) => anoAtual - 2 + i)
+  return Array.from({ length: qtd }, (_, i) => anoAtual - 2 + i)
 }
 
 export default function Importacao() {
   const [items, setItems] = useState(importacoesRecentes)
 
-    const [lote, setLote] = useState({
+  const [lote, setLote] = useState({
     id: null,
     arquivo: null,
     tipo: null,
     rows: [],
     excluidosPorColab: new Set()
   })
+
+  // ref para o resumo do lote (pré-validação)
+  const resumoRef = useRef(null)
 
   // edição 
   const [editingIndex, setEditingIndex] = useState(null)
@@ -76,6 +79,28 @@ export default function Importacao() {
     competenciaAno: String(new Date().getFullYear()),
     vencimento: ''
   })
+
+  // modal confirmação de deletar lote
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
+
+  // mensageria de confirmação
+  const [alertMsg, setAlertMsg] = useState('')
+
+  useEffect(() => {
+    if (!alertMsg) return
+    const timer = setTimeout(() => setAlertMsg(''), 3000)
+    return () => clearTimeout(timer)
+  }, [alertMsg])
+
+  // scroll automático para o resumo quando o lote for carregado
+  useEffect(() => {
+    if (lote.id && resumoRef.current) {
+      resumoRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'start'
+      })
+    }
+  }, [lote.id])
 
   function fakeParseRows(file) {
     const nomes = ['Solar das Rosas', 'Condominio Parque Onix', 'Residencial Atlântico', 'Village das Palmeiras', 'Edificio São João']
@@ -107,10 +132,10 @@ export default function Importacao() {
   }, [lote])
 
   // validação (> 2500 bloqueia)
-  const linhasValidadas = useMemo(() =>
-    rowsAtivas.map(r => ({ ...r, bloqueado: Number(r.valor) > 2500 }))
-  , [rowsAtivas])
-
+  const linhasValidadas = useMemo(
+    () => rowsAtivas.map(r => ({ ...r, bloqueado: Number(r.valor) > 2500 })),
+    [rowsAtivas]
+  )
 
   const totalBloqueios = useMemo(
     () => linhasValidadas.filter(r => r.bloqueado).length,
@@ -134,6 +159,8 @@ export default function Importacao() {
     novo.add(colab)
     setLote(prev => ({ ...prev, excluidosPorColab: novo }))
     if (editingIndex !== null) { setEditingIndex(null); setEditValue('') }
+    // mensagem de exclusão
+    setAlertMsg('Exclusão realizada')
   }
 
   const iniciarEdicao = (idx, valorAtual) => {
@@ -154,6 +181,8 @@ export default function Importacao() {
       const clone = [...lote.rows]
       clone[originalIndex] = { ...clone[originalIndex], valor: v }
       setLote(prev => ({ ...prev, rows: clone }))
+      // mensagem de edição
+      setAlertMsg('Edição salva com sucesso')
     }
     setEditingIndex(null)
     setEditValue('')
@@ -205,8 +234,23 @@ export default function Importacao() {
   const totalCompras = items.filter(i => i.tipo === 'compra').length
   const totalFaturamento = items.filter(i => i.tipo === 'faturamento').length
 
+  // confirmar exclusão do lote atual
+  const handleConfirmDeleteLote = () => {
+    limparLote()
+    setConfirmDeleteOpen(false)
+    // mensagem de exclusão do lote
+    setAlertMsg('Exclusão realizada')
+  }
+
   return (
     <div className="importacao-container">
+      {/* Mensagem de confirmação */}
+      {alertMsg && (
+        <div className={`alert ${alertMsg.includes('Exclusão') ? 'alert-error' : 'alert-success'}`}>
+          {alertMsg}
+        </div>
+      )}
+
       <FileUpload onResult={handleResult} />
 
       {/* KPIs do histórico */}
@@ -223,13 +267,18 @@ export default function Importacao() {
 
       {/* Lote atual */}
       {lote.id && (
-        <div className="lote-card">
+        <div className="lote-card" ref={resumoRef}>
           <div className="lote-header">
             <div>
               <h3>Pré-validação do Lote</h3>
               <small>Arquivo: <strong>{lote.arquivo}</strong> • Tipo: <strong>{lote.tipo}</strong></small>
             </div>
-            <button className="btn-ghost" onClick={limparLote}>Descartar lote</button>
+            <button
+              className="btn-ghost"
+              onClick={() => setConfirmDeleteOpen(true)}
+            >
+              Descartar lote
+            </button>
           </div>
 
           {/* KPIs do lote */}
@@ -392,7 +441,6 @@ export default function Importacao() {
                 ))}
               </select>
             </label>
-            
           </div>
 
           {/* Vencimento */}
@@ -411,6 +459,31 @@ export default function Importacao() {
             <button type="submit" className="btn-primary">Confirmar envio</button>
           </div>
         </form>
+      </Modal>
+
+      {/* Modal de confirmação de exclusão de lote */}
+      <Modal
+        open={confirmDeleteOpen}
+        title="Descartar lote"
+        onClose={() => setConfirmDeleteOpen(false)}
+      >
+        <p>Tem certeza que deseja descartar o lote atual? Essa ação não pode ser desfeita.</p>
+        <div className="modal-actions">
+          <button
+            type="button"
+            className="btn-ghost"
+            onClick={() => setConfirmDeleteOpen(false)}
+          >
+            Cancelar
+          </button>
+          <button
+            type="button"
+            className="btn-primary danger"
+            onClick={handleConfirmDeleteLote}
+          >
+            Confirmar descarte
+          </button>
+        </div>
       </Modal>
     </div>
   )
