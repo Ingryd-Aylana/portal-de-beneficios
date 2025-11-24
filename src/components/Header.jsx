@@ -52,7 +52,8 @@ export default function Header({ title }) {
         {/* Saudação */}
         <div className="header-user">
           <span className="user-muted">Bem-vindo(a),</span>
-          <strong className="user-name">{user?.name ?? 'Usuário'}</strong>
+          <strong className="user-name">{user?.username ?? 'Usuário'}</strong>
+      
         </div>
       </div>
     </header>

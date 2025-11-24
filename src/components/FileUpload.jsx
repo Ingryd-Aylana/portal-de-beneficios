@@ -1,8 +1,10 @@
+// FileUpload.jsx
 import React, { useRef, useState } from 'react'
 import StatusBadge from './StatusBadge'
 import { Upload } from './icons/Upload.jsx'
 
-export default function FileUpload({ onResult }) {
+// Renomeado onResult para onUpload para refletir a ação que ele dispara
+export default function FileUpload({ onUpload }) { // <--- onResult virou onUpload
   const inputRef = useRef()
   const [status, setStatus] = useState(null)
   const [message, setMessage] = useState('')
@@ -10,23 +12,32 @@ export default function FileUpload({ onResult }) {
 
   const handlePick = () => inputRef.current?.click()
 
-  const simulateProcessing = (file) => {
+  // Função para processar o upload, que agora é assíncrona
+  const processUpload = async (file) => { // <--- Agora é assíncrona e renomeada
     setStatus('processando')
     setMessage('Processando arquivo...')
     setFileName(file.name)
 
-    setTimeout(() => {
-      const ok = file.name.endsWith('.csv') || Math.random() > 0.2
-      if (ok) {
+    // 💡 PASSO CRÍTICO: Chamar a função onUpload (que é o handleResult do Importacao.jsx)
+    try {
+      // Passa o arquivo e espera o resultado REAL da API
+      // O onUpload (handleResult) deve retornar { success: boolean, message: string }
+      const result = await onUpload?.({ status: 'processando', file }) 
+      
+      // Verifica o resultado retornado pelo handleResult
+      if (result.success) {
         setStatus('sucesso')
-        setMessage('Importação concluída com sucesso.')
-        onResult?.({ status: 'sucesso', file })
+        setMessage(result.message)
       } else {
         setStatus('erro')
-        setMessage('Falha na importação. Verifique o formato e tente novamente.')
-        onResult?.({ status: 'erro', file })
+        setMessage(result.message)
       }
-    }, 1500)
+    } catch (error) {
+      // Caso haja uma falha no await (erro de rede, etc.)
+      setStatus('erro')
+      setMessage('Falha na comunicação: ' + error.message)
+    }
+
   }
 
   const handleChange = (e) => {
@@ -38,10 +49,12 @@ export default function FileUpload({ onResult }) {
       setFileName('')
       return
     }
-    simulateProcessing(file)
+    // Chama a nova função de processamento assíncrona
+    processUpload(file) // <--- Chamada modificada
   }
 
   return (
+    // ... (Restante do JSX permanece inalterado)
     <div className="upload-card">
       <div className="upload-header">
         <div className="upload-icon-wrapper">
