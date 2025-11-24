@@ -38,11 +38,11 @@
   display: flex;
   justify-content: center;
   align-items: center;
-  margin-bottom: 20px;
+  margin-bottom: 4px;
 }
 
 .logoImg {
-  width: 200px !important;
+  width: 140px !important;
   max-width: 100%;
   height: auto;
   object-fit: contain;

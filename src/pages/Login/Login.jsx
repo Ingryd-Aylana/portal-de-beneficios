@@ -1,8 +1,8 @@
 import React, { useState } from 'react'
 import { useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../context/AuthContext.jsx'
-import Carousel from '../components/Carousel.jsx'
-import '../styles/Login.css'
+import { useAuth } from '../../context/AuthContext.jsx'
+import Carousel from '../../components/Carousel.jsx'
+import '../../styles/Login.css'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -82,7 +82,7 @@ export default function Login() {
             <button
               type="button"
               className="button ghost"
-              onClick={handleForgotPassword} // MUDANÇA 4: Substituído o alert()
+              onClick={() => alert('Fluxo de recuperação de senha ainda não implementado.')}
             >
               Esqueci a Senha
             </button>

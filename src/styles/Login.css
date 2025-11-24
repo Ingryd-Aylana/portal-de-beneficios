@@ -1,6 +1,6 @@
 .logoImg {
   height: 88px;
-  width: auto;
+  width: 188px !important;
   object-fit: contain;
 }
 
@@ -30,7 +30,6 @@
 }
 
 
-/* ==== Login page layout with carousel ==== */
 .login-shell {
   min-height: 100vh;
   display: grid;
@@ -118,4 +117,71 @@
   .login-left {
     padding: 20px;
   }
+}
+ /* Esqueci a senha */
+.voltar-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 0;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  color: #000000;
+  cursor: pointer;
+  transition: color 0.15s ease, transform 0.15s ease;
+}
+
+.voltar-btn:hover {
+  color: #073950;
+  transform: translateX(-1px);
+}
+
+.login-title {
+  font-size: 22px;
+  font-weight: 600;
+  color: #073950;
+  margin: 4px 0 2px 0;
+  text-align: center;
+}
+
+.login-subtitle {
+  font-size: 13px;
+  color: #073950;
+  margin: 0 0 10px 0;
+  text-align: center;
+}
+
+.input-group {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-group .input {
+  padding-left: 38px;
+}
+
+.input-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 16px;
+  color: #073950;
+  pointer-events: none;
+}
+
+.feedback {
+  margin-top: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  font-size: 13px;
+  text-align: center;
+}
+
+.feedback.success {
+  background: rgba(22, 163, 74, 0.12);
+  border: 1px solid rgba(22, 163, 74, 0.55);
+  color: #000000;
 }

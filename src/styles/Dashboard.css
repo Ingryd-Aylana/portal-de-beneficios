@@ -1,4 +1,3 @@
-/* ====== CONTAINER PRINCIPAL ====== */
 .dashboard-container {
   padding: 24px;
   max-width: 1400px;
@@ -6,7 +5,6 @@
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 }
 
-/* ====== HEADER COM FERRAMENTAS ====== */
 .header--with-tools {
   display: flex;
   align-items: center;
@@ -22,7 +20,7 @@
   color: #1a1a1a;
 }
 
-/* ====== TOOLBAR (Busca + Filtros) ====== */
+/* (Busca + Filtros)  */
 .dashboard-tools {
   flex: 1;
   display: flex;
@@ -31,7 +29,7 @@
   max-width: 500px;
 }
 
-/* ====== AUTOCOMPLETE / BUSCA ====== */
+/* AUTOCOMPLETE / BUSCA */
 .auto-wrap {
   position: relative;
   width: 100%;
@@ -168,7 +166,7 @@
   border-bottom-right-radius: 10px;
 }
 
-/* ====== FILTROS ====== */
+/* FILTROS */
 .filter-container {
   position: relative;
 }
@@ -311,7 +309,7 @@
   color: #111827;
 }
 
-/* ====== CARDS GRID ====== */
+/* CARDS */
 .card-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -429,7 +427,6 @@
   margin-top: 8px;
 }
 
-/* ====== BADGES ====== */
 .badge {
   display: inline-flex;
   align-items: center;
@@ -464,7 +461,7 @@
   color: #64748b;
 }
 
-/* ====== BENEFÍCIOS DO CONDOMÍNIO ====== */
+/* BENEFÍCIOS DO CONDOMÍNIO */
 .beneficios-wrap {
   background: #fff;
   border: 2px solid #e5e7eb;
@@ -574,7 +571,6 @@
   color: #111827;
 }
 
-/* ====== RESPONSIVO ====== */
 @media (max-width: 768px) {
   .dashboard-container {
     padding: 16px;
@@ -611,7 +607,7 @@
   }
 }
 
-/* ===== Modal Pendências do Dia ===== */
+/* Modal Pendências do Dia */
 .pb-modal-overlay {
   position: fixed;
   inset: 0;
@@ -833,4 +829,295 @@
   font-size: 18px;
   color: #244a88;
   margin-top: 2px;
+}
+
+/* ==== Benefícios do condomínio – ação ==== */
+
+.beneficios-footer {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+.beneficios-btn {
+  padding: 8px 14px;
+  border-radius: 999px;
+  border: 1px solid rgba(37, 99, 235, 0.16);
+  background: #ffffff;
+  color: #1d4ed8;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+  transition:
+    background 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.1s ease;
+}
+
+.beneficios-btn:hover {
+  background: #eff6ff;
+  box-shadow: 0 2px 5px rgba(15, 23, 42, 0.12);
+}
+
+.beneficios-btn:active {
+  transform: translateY(1px);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.12);
+}
+
+.detail-view {
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 28px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.05);
+}
+
+/* Cabeçalho */
+.detail-header {
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 16px;
+  margin-bottom: 24px;
+}
+
+.detail-header h2 {
+  margin: 8px 0 4px 0;
+  font-size: 24px;
+  color: var(--text-strong);
+}
+
+.detail-subtitle {
+  font-size: 14px;
+  color: var(--text-muted);
+  margin: 0;
+}
+
+.btn-back {
+  background: transparent;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-muted);
+  font-size: 14px;
+  cursor: pointer;
+  margin-bottom: 6px;
+  padding: 2px 0;
+}
+
+.btn-back:hover {
+  color: var(--text-strong);
+}
+
+.detail-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 18px;
+  margin-bottom: 32px;
+}
+
+.summary-card {
+  background: var(--panel-light, #fff);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 16px 18px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+}
+
+.summary-icon {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  color: white;
+}
+
+.summary-icon--primary {
+  background: #2563eb;
+}
+
+.summary-icon--green {
+  background: #16a34a;
+}
+
+.summary-icon--amber {
+  background: #d97706;
+}
+
+.summary-meta {
+  display: flex;
+  flex-direction: column;
+}
+
+.summary-label {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.summary-value {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--text-strong);
+}
+
+.summary-helper {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: -2px;
+}
+
+.detail-section {
+  margin-top: 26px;
+}
+
+.section-header h3 {
+  font-size: 18px;
+  margin: 0 0 12px 0;
+  color: var(--text-strong);
+  font-weight: 600;
+}
+
+.table-wrapper {
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.table {
+  width: 100%;
+  font-size: 14px;
+  border-collapse: collapse;
+  background: var(--panel-light);
+}
+
+.table thead {
+  background: var(--panel);
+}
+
+.table thead th {
+  text-align: left;
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--text-strong);
+  border-bottom: 1px solid var(--border);
+}
+
+.table tbody tr {
+  transition: background 0.15s;
+}
+
+.table tbody tr:hover {
+  background: rgba(0,0,0,0.02);
+}
+
+.table tbody td {
+  padding: 12px 14px;
+  border-bottom: 1px solid var(--border);
+  color: var(--text-normal);
+}
+
+.table-empty {
+  text-align: center !important;
+  font-size: 14px;
+  padding: 20px !important;
+  color: var(--text-muted);
+}
+
+
+.badge {
+  display: inline-block;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  color: #fff;
+  font-weight: 500;
+}
+
+.bg-green { background: #16a34a; }
+.bg-red { background: #dc2626; }
+.bg-blue { background: #2563eb; }
+.bg-amber { background: #d97706; }
+.bg-gray { background: #6b7280; }
+
+@media (max-width: 640px) {
+  .detail-summary-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-view {
+    padding: 20px;
+  }
+
+  .summary-card {
+    padding: 14px;
+  }
+}
+
+/* Adc colaboradores */
+
+.action-btn {
+  padding: 10px 18px;
+  background: #2563eb;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-weight: 500;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.12);
+  transition: background 0.2s, transform 0.1s;
+}
+
+.action-btn:hover {
+  background: #1e40af;
+}
+
+.action-btn:active {
+  transform: translateY(1px);
+}
+
+.detail-header--flex {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+
+.detail-title-block {
+  display: flex;
+  flex-direction: column;
+}
+
+.detail-header-actions {
+  display: flex;
+  align-items: center;
+}
+
+.detail-header-actions .action-btn {
+  margin-top: 6px;
+}
+
+@media (max-width: 640px) {
+  .detail-header--flex {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .detail-header-actions {
+    width: 100%;
+  }
+
+  .detail-header-actions .action-btn {
+    width: 100%;
+  }
 }
