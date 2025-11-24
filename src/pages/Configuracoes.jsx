@@ -1,7 +1,7 @@
-import React, { useState, useRef } from 'react'
+import React, { useState, useRef, useMemo } from 'react'
 import {
   Building2, Plus, Upload, Download, Save, X,
-  CheckCircle, AlertCircle, FileSpreadsheet, Users, MapPin, Phone, Trash2
+  CheckCircle, AlertCircle, FileSpreadsheet, Users, MapPin, Phone, Trash2, Search
 } from 'lucide-react'
 import '../styles/Configuracao.css'
 
@@ -15,6 +15,32 @@ async function ensureXLSX() {
     document.head.appendChild(s)
   })
   return window.XLSX
+}
+
+/** FILTRO */
+function FiltroCondominios({ value, onChange, onClear }) {
+  return (
+    <div className="cfg-filter-bar">
+      <div className="cfg-filter-search">
+        <Search className="ico" />
+        <input
+          type="text"
+          placeholder="Buscar condomínio por nome ou CNPJ"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+        />
+        {value && (
+          <button
+            type="button"
+            className="cfg-filter-clear"
+            onClick={onClear}
+          >
+            <X className="ico" />
+          </button>
+        )}
+      </div>
+    </div>
+  )
 }
 
 export default function ConfiguracaoCondominios() {
@@ -43,20 +69,36 @@ export default function ConfiguracaoCondominios() {
   })
 
   const [editandoId, setEditandoId] = useState(null)
-  const [uploadStatus, setUploadStatus] = useState(null) 
+  const [uploadStatus, setUploadStatus] = useState(null)
   const [uploadedFile, setUploadedFile] = useState(null)
   const [errosUpload, setErrosUpload] = useState([])
 
   const [confirm, setConfirm] = useState({ open: false, id: null, nome: '' })
 
-  // --- TOAST ---
+  // TOAST 
   const [toast, setToast] = useState({ open: false, message: '', type: 'success' })
   const toastTimer = useRef(null)
   const showToast = (message, type = 'success') => {
     setToast({ open: true, message, type })
     if (toastTimer.current) clearTimeout(toastTimer.current)
-    toastTimer.current = setTimeout(() => setToast({ open: false, message: '', type: 'success' }), 2500)
+    toastTimer.current = setTimeout(
+      () => setToast({ open: false, message: '', type: 'success' }),
+      2500
+    )
   }
+
+  // FILTRO  
+  const [busca, setBusca] = useState('')
+
+  const condominiosFiltrados = useMemo(() => {
+    if (!busca.trim()) return condominios
+    const term = busca.trim().toLowerCase()
+
+    return condominios.filter((c) =>
+      (c.nome && c.nome.toLowerCase().includes(term)) ||
+      (c.cnpj && c.cnpj.toLowerCase().includes(term))
+    )
+  }, [busca, condominios])
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target
@@ -73,7 +115,9 @@ export default function ConfiguracaoCondominios() {
 
   const handleSubmit = () => {
     if (editandoId) {
-      setCondominios(prev => prev.map(c => c.id === editandoId ? { ...formData, id: editandoId } : c))
+      setCondominios(prev =>
+        prev.map(c => c.id === editandoId ? { ...formData, id: editandoId } : c)
+      )
       showToast('Cadastro Realizado com Sucesso')
     } else {
       const novoCondominio = {
@@ -94,22 +138,33 @@ export default function ConfiguracaoCondominios() {
     setModoAtivo('form')
   }
 
-  // Modal
-  const solicitarExcluir = (cond) => setConfirm({ open: true, id: cond.id, nome: cond.nome })
+  /* MODAL EXCLUSÃO */
+  const solicitarExcluir = (cond) =>
+    setConfirm({ open: true, id: cond.id, nome: cond.nome })
+
   const confirmarExclusao = () => {
     setCondominios(prev => prev.filter(c => c.id !== confirm.id))
     setConfirm({ open: false, id: null, nome: '' })
     showToast('Condomínio excluído com sucesso', 'danger')
   }
-  const cancelarExclusao = () => setConfirm({ open: false, id: null, nome: '' })
 
+  const cancelarExclusao = () =>
+    setConfirm({ open: false, id: null, nome: '' })
+
+  /* UPLOAD PLANILHA */
   const handleFileUpload = (e) => {
     const file = e.target.files[0]
     if (!file) return
     if (!file.name.endsWith('.csv') && !file.name.endsWith('.xlsx')) {
-      setUploadStatus('error'); setErrosUpload(['Formato de arquivo inválido. Use CSV ou XLSX.']); return
+      setUploadStatus('error')
+      setErrosUpload(['Formato de arquivo inválido. Use CSV ou XLSX.'])
+      return
     }
-    setUploadedFile(file); setUploadStatus('processing'); setErrosUpload([])
+
+    setUploadedFile(file)
+    setUploadStatus('processing')
+    setErrosUpload([])
+
     setTimeout(() => {
       const novosCondominios = [
         {
@@ -127,7 +182,12 @@ export default function ConfiguracaoCondominios() {
       ]
       setCondominios(prev => [...prev, ...novosCondominios])
       setUploadStatus('success')
-      setTimeout(() => { setModoAtivo('lista'); setUploadStatus(null); setUploadedFile(null) }, 2000)
+
+      setTimeout(() => {
+        setModoAtivo('lista')
+        setUploadStatus(null)
+        setUploadedFile(null)
+      }, 2000)
     }, 2000)
   }
 
@@ -155,7 +215,9 @@ export default function ConfiguracaoCondominios() {
               <Trash2 className="ico danger" />
               <h3>Excluir condomínio</h3>
             </div>
-            <button className="icon-btn" onClick={onCancel}><X className="ico" /></button>
+            <button className="icon-btn" onClick={onCancel}>
+              <X className="ico" />
+            </button>
           </div>
           <div className="modal-body">
             Tem certeza que deseja excluir <strong>{nome}</strong>? Esta ação não pode ser desfeita.
@@ -195,7 +257,7 @@ export default function ConfiguracaoCondominios() {
             </tr>
           </thead>
           <tbody>
-            {condominios.map(cond => (
+            {condominiosFiltrados.map(cond => (
               <tr key={cond.id}>
                 <td>
                   <div className="cell-flex">
@@ -237,6 +299,13 @@ export default function ConfiguracaoCondominios() {
           <p>Nenhum condomínio cadastrado</p>
         </div>
       )}
+
+      {condominios.length > 0 && condominiosFiltrados.length === 0 && (
+        <div className="empty">
+          <Building2 className="ico xl muted" />
+          <p>Nenhum condomínio encontrado para a busca</p>
+        </div>
+      )}
     </div>
   )
 
@@ -261,7 +330,12 @@ export default function ConfiguracaoCondominios() {
 
         <div className="field">
           <label>CNPJ *</label>
-          <input name="cnpj" value={formData.cnpj} onChange={handleInputChange} placeholder="00.000.000/0000-00" />
+          <input
+            name="cnpj"
+            value={formData.cnpj}
+            onChange={handleInputChange}
+            placeholder="00.000.000/0000-00"
+          />
         </div>
 
         <div className="grid-full section-title mt">
@@ -280,7 +354,12 @@ export default function ConfiguracaoCondominios() {
 
         <div className="field">
           <label>CEP *</label>
-          <input name="cep" value={formData.cep} onChange={handleInputChange} placeholder="00000-000" />
+          <input
+            name="cep"
+            value={formData.cep}
+            onChange={handleInputChange}
+            placeholder="00000-000"
+          />
         </div>
 
         <div className="field">
@@ -305,12 +384,22 @@ export default function ConfiguracaoCondominios() {
 
         <div className="field">
           <label>Telefone *</label>
-          <input name="telefone" value={formData.telefone} onChange={handleInputChange} placeholder="(00) 0000-0000" />
+          <input
+            name="telefone"
+            value={formData.telefone}
+            onChange={handleInputChange}
+            placeholder="(00) 0000-0000"
+          />
         </div>
 
         <div className="field">
           <label>E-mail *</label>
-          <input type="email" name="email" value={formData.email} onChange={handleInputChange} />
+          <input
+            type="email"
+            name="email"
+            value={formData.email}
+            onChange={handleInputChange}
+          />
         </div>
 
         <div className="grid-full section-title mt">
@@ -319,17 +408,32 @@ export default function ConfiguracaoCondominios() {
 
         <div className="field">
           <label>Responsável *</label>
-          <input name="responsavel" value={formData.responsavel} onChange={handleInputChange} />
+          <input
+            name="responsavel"
+            value={formData.responsavel}
+            onChange={handleInputChange}
+          />
         </div>
 
         <div className="field">
           <label>Quantidade de Funcionários *</label>
-          <input type="number" min="0" name="qtdFuncionarios" value={formData.qtdFuncionarios} onChange={handleInputChange} />
+          <input
+            type="number"
+            min="0"
+            name="qtdFuncionarios"
+            value={formData.qtdFuncionarios}
+            onChange={handleInputChange}
+          />
         </div>
 
         <div className="grid-full">
           <label className="check">
-            <input type="checkbox" name="ativo" checked={formData.ativo} onChange={handleInputChange} />
+            <input
+              type="checkbox"
+              name="ativo"
+              checked={formData.ativo}
+              onChange={handleInputChange}
+            />
             <span>Condomínio ativo</span>
           </label>
         </div>
@@ -350,7 +454,14 @@ export default function ConfiguracaoCondominios() {
     <div className="card pad">
       <div className="card-head">
         <h2 className="card-title">Importar Condomínios</h2>
-        <button className="icon-btn" onClick={() => { setModoAtivo('lista'); setUploadStatus(null); setUploadedFile(null) }}>
+        <button
+          className="icon-btn"
+          onClick={() => {
+            setModoAtivo('lista')
+            setUploadStatus(null)
+            setUploadedFile(null)
+          }}
+        >
           <X className="ico" />
         </button>
       </div>
@@ -369,7 +480,12 @@ export default function ConfiguracaoCondominios() {
       </div>
 
       <div className="drop">
-        <input id="planilha-upload" type="file" accept=".csv,.xlsx" onChange={handleFileUpload} />
+        <input
+          id="planilha-upload"
+          type="file"
+          accept=".csv,.xlsx"
+          onChange={handleFileUpload}
+        />
         <label htmlFor="planilha-upload" className="drop-area">
           <FileSpreadsheet className="ico xl" />
           <p className="drop-title">Clique para selecionar a planilha</p>
@@ -384,9 +500,11 @@ export default function ConfiguracaoCondominios() {
           {uploadStatus === 'processing' && <span className="spinner" />}
           <div className="alert-text">
             <p className="alert-title">
-              {uploadStatus === 'success' ? 'Condomínios importados com sucesso!' :
-                uploadStatus === 'error' ? 'Erro ao processar arquivo' :
-                  'Processando planilha...'}
+              {uploadStatus === 'success'
+                ? 'Condomínios importados com sucesso!'
+                : uploadStatus === 'error'
+                  ? 'Erro ao processar arquivo'
+                  : 'Processando planilha...'}
             </p>
             {uploadedFile && <p className="alert-file">{uploadedFile.name}</p>}
           </div>
@@ -396,7 +514,11 @@ export default function ConfiguracaoCondominios() {
       {errosUpload.length > 0 && (
         <div className="errors">
           <p className="errors-title">Erros encontrados:</p>
-          <ul>{errosUpload.map((e, i) => <li key={i}>{e}</li>)}</ul>
+          <ul>
+            {errosUpload.map((e, i) => (
+              <li key={i}>{e}</li>
+            ))}
+          </ul>
         </div>
       )}
     </div>
@@ -404,9 +526,24 @@ export default function ConfiguracaoCondominios() {
 
   return (
     <div className="cfg-page">
-      {modoAtivo === 'lista' && <div className="cfg-header"><h1>Configurações de Condomínios</h1><p>Gerencie os condomínios cadastrados na plataforma</p></div>}
-      {modoAtivo === 'lista' && <ListaAcoes />}
-      {modoAtivo === 'lista' && <Tabela />}
+      {modoAtivo === 'lista' && (
+        <>
+          <div className="cfg-header">
+            <h1>Configurações de Condomínios</h1>
+            <p>Gerencie os condomínios cadastrados na plataforma</p>
+          </div>
+
+          <FiltroCondominios
+            value={busca}
+            onChange={setBusca}
+            onClear={() => setBusca('')}
+          />
+
+          <ListaAcoes />
+          <Tabela />
+        </>
+      )}
+
       {modoAtivo === 'form' && <Formulario />}
       {modoAtivo === 'upload' && <UploadPlanilha />}
 
@@ -417,7 +554,11 @@ export default function ConfiguracaoCondominios() {
         onCancel={cancelarExclusao}
       />
 
-      <div className={`cfg-toast-wrap ${toast.open ? 'show' : ''}`} role="status" aria-live="polite">
+      <div
+        className={`cfg-toast-wrap ${toast.open ? 'show' : ''}`}
+        role="status"
+        aria-live="polite"
+      >
         <div className={`cfg-toast ${toast.type === 'danger' ? 'cfg-toast-danger' : 'cfg-toast-success'}`}>
           {toast.type === 'danger' ? (
             <Trash2 className="cfg-toast-ico" />
@@ -427,7 +568,6 @@ export default function ConfiguracaoCondominios() {
           <span>{toast.message}</span>
         </div>
       </div>
-
     </div>
   )
 }

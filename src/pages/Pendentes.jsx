@@ -96,25 +96,6 @@ export default function Pendentes() {
         </div>
       </div>
 
-      {mostrarBotaoFaturamento && (
-        <button
-          className="kp-btn-submit"
-          onClick={() => handleEnviarFaturamento(pendencia.id)}
-          disabled={enviandoFaturamento === pendencia.id}
-        >
-          {enviandoFaturamento === pendencia.id ? (
-            <>
-              <span className="kp-spinner" />
-              <span>Enviando...</span>
-            </>
-          ) : (
-            <>
-              <Send className="kp-ico-btn" />
-              <span>Enviar para Faturamento</span>
-            </>
-          )}
-        </button>
-      )}
     </div>
   )
 

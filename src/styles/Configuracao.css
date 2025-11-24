@@ -7,11 +7,13 @@
     font-size: 24px;
     font-weight: 800;
     color: var(--text);
+    text-align: center;
 }
 
 .cfg-header p {
     margin: 0 0 16px 0;
     color: var(--muted);
+    text-align: center;
 }
 
 .cfg-actions {
@@ -677,4 +679,65 @@
 
 .btn-danger:hover {
     background: #b91c1c;
+}
+
+/* Filtro */
+
+.cfg-filter-bar {
+  margin-bottom: 16px;
+  display: flex;
+  justify-content: flex-start;
+}
+
+.cfg-filter-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+  max-width: 1000px;
+  width: 100%;
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.03);
+}
+
+.cfg-filter-search .ico {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: #9ca3af;
+}
+
+.cfg-filter-search input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.875rem;
+  color: #111827;
+}
+
+.cfg-filter-search input::placeholder {
+  color: #9ca3af;
+}
+
+.cfg-filter-clear {
+  border: none;
+  background: transparent;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.cfg-filter-clear .ico {
+  width: 14px;
+  height: 14px;
+}
+
+.cfg-filter-clear:hover {
+  background: #e5e7eb;
 }
