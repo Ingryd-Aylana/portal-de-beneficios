@@ -5,22 +5,43 @@ import Carousel from '../components/Carousel.jsx'
 import '../styles/Login.css'
 
 export default function Login() {
-  const [username, setUsername] = useState('')
+  const [email, setEmail] = useState('')
   const [password, setPassword] = useState('')
   const [error, setError] = useState('')
+  const [isLoggingIn, setIsLoggingIn] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
   const { login } = useAuth()
 
-  function handleSubmit(e) {
+  // MUDANÇA 1: Função agora é assíncrona
+  async function handleSubmit(e) {
     e.preventDefault()
-    const res = login({ username, password })
-    if (res.ok) {
+    setError('')
+    setIsLoggingIn(true) 
+
+    try {
+
+      await login(email, password)
+
+      // MUDANÇA 3: Navegação na rota de sucesso
       const redirectTo = location.state?.from?.pathname || '/'
       navigate(redirectTo, { replace: true })
-    } else {
-      setError(res.error || 'Falha no login')
+    } catch (err) {
+      // MUDANÇA 3: Tratamento de erro no 'catch'
+      console.error('Erro de Login:', err)
+      const message = err.message.includes('401') || err.message.includes('credenciais')
+        ? 'Credenciais inválidas. Verifique o usuário e a senha.'
+        : 'Falha ao conectar. Tente novamente mais tarde.'
+
+      setError(message)
+    } finally {
+      setIsLoggingIn(false) // Finaliza o estado de carregamento/login
     }
+  }
+
+  // Função para simular o clique no esqueci a senha, evitando o alert()
+  const handleForgotPassword = () => {
+      setError('Fluxo de recuperação de senha ainda não implementado.')
   }
 
   return (
@@ -40,8 +61,8 @@ export default function Login() {
               <input
                 className="input"
                 placeholder="Usuário"
-                value={username}
-                onChange={e => setUsername(e.target.value)}
+                value={email}
+                onChange={e => setEmail(e.target.value)}
               />
             </div>
             <div className="field">
@@ -55,11 +76,13 @@ export default function Login() {
               />
             </div>
             {error && <div className="status erro">{error}</div>}
-            <button className="button primary" type="submit">Entrar</button>
+            <button className="button primary" type="submit" disabled={isLoggingIn}>
+                {isLoggingIn ? 'Entrando...' : 'Entrar'}
+            </button>
             <button
               type="button"
               className="button ghost"
-              onClick={() => alert('Fluxo de recuperação de senha ainda não implementado.')}
+              onClick={handleForgotPassword} // MUDANÇA 4: Substituído o alert()
             >
               Esqueci a Senha
             </button>
