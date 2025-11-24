@@ -7,6 +7,7 @@ import Importacao from './pages/Importacao.jsx'
 import Faturamento from './pages/Faturamento.jsx'
 import Pendentes from './pages/Pendentes.jsx'
 import Historico from './pages/Historico.jsx'
+import RelatoriosBeneficios from './pages/RelatoriosBeneficios.jsx'
 import HistoricoCondominio from './pages/HistoricoCondominio.jsx'
 import AdicionarColaboradores from './pages/AdicionarColaboradores.jsx'
 import Login from './pages/Login/Login.jsx'
@@ -22,7 +23,8 @@ function Layout() {
     '/importacao': 'Importação',
     '/faturamento': 'Faturamento',
     '/pendentes': 'Pendências',
-    '/historico': 'Histórico'
+    '/historico': 'Histórico',
+    '/relatorios': 'Relatorios'
   }
   const title = titles[location.pathname] ?? 'Portal de Benefícios'
   return (
@@ -44,6 +46,7 @@ function Layout() {
             />
             <Route path="/configuracoes" element={<ConfiguracaoCondominios />} />
             <Route path="*" element={<Navigate to="/" replace />} />
+            <Route path="relatorios" element={<RelatoriosBeneficios />} />
           </Routes>
         </div>
       </div>

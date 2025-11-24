@@ -1,0 +1,271 @@
+.rel-page {
+  padding: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.rel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 20px;
+}
+
+.rel-header h1 {
+  margin: 0;
+  font-size: 24px;
+  color: #111827;
+}
+
+.rel-header p {
+  margin: 4px 0 0;
+  color: #6b7280;
+  font-size: 0.95rem;
+}
+
+/* Filtros */
+
+.rel-filters {
+  margin-bottom: 20px;
+}
+
+.rel-filters-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16px;
+}
+
+.rel-filters-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 600;
+  color: #111827;
+}
+
+.rel-filters-title .ico {
+  width: 18px;
+  height: 18px;
+  color: #4b5563;
+}
+
+.rel-filters-hint {
+  font-size: 0.8rem;
+  color: #9ca3af;
+}
+
+.rel-filters-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .rel-filters-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 640px) {
+  .rel-filters-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rel-filters .field label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+.rel-filters .field input,
+.rel-filters .field select {
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  font-size: 0.875rem;
+  color: #111827;
+}
+
+.rel-filters .field input:focus,
+.rel-filters .field select:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
+}
+
+/* input com ícone */
+
+.input-with-ico {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 10px;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.input-with-ico .ico {
+  width: 16px;
+  height: 16px;
+  color: #9ca3af;
+}
+
+.input-with-ico input {
+  flex: 1;
+  border: none;
+  background: transparent;
+  outline: none;
+  font-size: 0.875rem;
+  color: #111827;
+}
+
+/* GRID de relatórios */
+
+.rel-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 900px) {
+  .rel-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.rel-card {
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.rel-card-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.rel-card-ico {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rel-card-ico .ico {
+  width: 20px;
+  height: 20px;
+}
+
+/* cores dos ícones */
+
+.rel-ico-green {
+  background: #ecfdf3;
+  color: #16a34a;
+}
+
+.rel-ico-orange {
+  background: #fff7ed;
+  color: #ea580c;
+}
+
+.rel-ico-blue {
+  background: #eff6ff;
+  color: #2563eb;
+}
+
+.rel-ico-purple {
+  background: #f5f3ff;
+  color: #7c3aed;
+}
+
+.rel-ico-teal {
+  background: #ecfeff;
+  color: #0d9488;
+}
+
+.rel-card-head h2 {
+  margin: 0;
+  font-size: 1rem;
+  color: #111827;
+}
+
+.rel-card-head p {
+  margin: 4px 0 0;
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.rel-card-list {
+  margin: 0;
+  padding-left: 18px;
+  font-size: 0.85rem;
+  color: #4b5563;
+}
+
+.rel-card-list li + li {
+  margin-top: 2px;
+}
+
+.rel-card-footer {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* Botões – assumindo que .btn, .btn-primary, .btn-light já existem
+   Se não tiver, você pode adaptar ou reaproveitar das outras telas */
+
+/* TOAST */
+
+.rel-toast-wrap {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  transform: translateY(20px);
+  opacity: 0;
+  pointer-events: none;
+  transition: all 0.2s ease;
+  z-index: 999;
+}
+
+.rel-toast-wrap.show {
+  transform: translateY(0);
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.rel-toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.25);
+}
+
+.rel-toast-success {
+  background: #ecfdf3;
+  color: #166534;
+}
+
+.rel-toast-danger {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+
+.rel-toast-ico {
+  width: 16px;
+  height: 16px;
+}
