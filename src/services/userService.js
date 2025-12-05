@@ -100,7 +100,6 @@ export const userService = {
         try {
             // O apiFetch adicionará o Authorization header automaticamente
             const userData = await apiFetch('/users/me/', { method: 'GET' }); 
-            console.log('Dados do usuário buscados:', userData);
             return userData;
         } catch (error) {
             console.error('Erro ao buscar dados do usuário:', error);

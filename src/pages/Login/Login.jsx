@@ -1,49 +1,64 @@
-import React, { useState } from 'react'
-import { useNavigate, useLocation } from 'react-router-dom'
-import { useAuth } from '../../context/AuthContext.jsx'
-import Carousel from '../../components/Carousel.jsx'
-import '../../styles/Login.css'
-import { userService } from '../../services/userService.js'
+import React, { useState, useEffect } from 'react'; 
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useAuth } from '../../context/AuthContext.jsx'; 
+import Carousel from '../../components/Carousel.jsx';
+import '../../styles/Login.css';
+
 
 export default function Login() {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState('')
-  const [isLoggingIn, setIsLoggingIn] = useState(false)
-  const navigate = useNavigate()
-  const location = useLocation()
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
+  
+  const navigate = useNavigate();
+  
+  const { isAuthenticated, isLoading, login } = useAuth(); 
 
-  // MUDANÇA 1: Função agora é assíncrona
+  // =========================================================
+  // LÓGICA DE REDIRECIONAMENTO DE USUÁRIO AUTENTICADO
+  // =========================================================
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      console.log("Usuário já autenticado. Redirecionando para /");
+      navigate('/', { replace: true });
+    }
+  }, [isAuthenticated, isLoading, navigate]);
+
+  // =========================================================
+  // LÓGICA DE SUBMISSÃO (LOGIN)
+  // =========================================================
   async function handleSubmit(e) {
-    e.preventDefault()
-    setError('')
-    setIsLoggingIn(true) 
+    e.preventDefault();
+    setError('');
+    setIsLoggingIn(true);
 
     try {
-
-      await userService.login(email, password)
-
-      // MUDANÇA 3: Navegação na rota de sucesso
-      const redirectTo = location.state?.from?.pathname || '/'
-      navigate(redirectTo, { replace: true })
+      await login(email, password, '/'); 
     } catch (err) {
-      // MUDANÇA 3: Tratamento de erro no 'catch'
-      console.error('Erro de Login:', err)
-      const message = err.message.includes('401') || err.message.includes('credenciais')
+     
+      console.error('Erro de Login:', err);
+      
+      const message = 
+        err.message.includes('401') || err.message.includes('credenciais')
         ? 'Credenciais inválidas. Verifique o usuário e a senha.'
-        : 'Falha ao conectar. Tente novamente mais tarde.'
+        : 'Falha ao conectar. Tente novamente mais tarde.';
 
-      setError(message)
+      setError(message);
     } finally {
-      setIsLoggingIn(false) // Finaliza o estado de carregamento/login
+      setIsLoggingIn(false); 
     }
   }
 
-  // Função para simular o clique no esqueci a senha, evitando o alert()
   const handleForgotPassword = () => {
-      setError('Fluxo de recuperação de senha ainda não implementado.')
+    setError('Fluxo de recuperação de senha ainda não implementado.');
   }
+  
 
+  if (isLoading) {
+    return <div>Verificando sessão...</div>;
+  }
+  
   return (
     <div className="login-shell">
       <div className="login-card">
@@ -55,6 +70,7 @@ export default function Login() {
               className="logoImg"
             />
           </div>
+          
           <form onSubmit={handleSubmit} className="login-form">
             <div className="field">
               <label>Login</label>
@@ -75,14 +91,17 @@ export default function Login() {
                 onChange={e => setPassword(e.target.value)}
               />
             </div>
+            
             {error && <div className="status erro">{error}</div>}
+            
             <button className="button primary" type="submit" disabled={isLoggingIn}>
                 {isLoggingIn ? 'Entrando...' : 'Entrar'}
             </button>
+            
             <button
               type="button"
               className="button ghost"
-              onClick={() => alert('Fluxo de recuperação de senha ainda não implementado.')}
+              onClick={handleForgotPassword}
             >
               Esqueci a Senha
             </button>
@@ -94,5 +113,5 @@ export default function Login() {
         </div>
       </div>
     </div>
-  )
+  );
 }

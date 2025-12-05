@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom'; // 👈 Importamos o useNavigate
 import { userService } from '../services/userService.js'; 
 
 // Criação do Contexto
@@ -6,7 +7,6 @@ const AuthContext = createContext();
 
 /**
  * Hook customizado para usar o Auth Context.
- * Simplifica o acesso ao estado e às funções de autenticação.
  */
 export const useAuth = () => {
     return useContext(AuthContext);
@@ -14,18 +14,19 @@ export const useAuth = () => {
 
 /**
  * Componente Provedor de Autenticação.
- * Gerencia o estado de autenticação, o carregamento e as funções de login/logout/refresh.
  */
 export const AuthProvider = ({ children }) => {
     const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [user, setUser] = useState(null); // Aqui você pode armazenar dados do usuário (id, email)
-    const [isLoading, setIsLoading] = useState(true); // Indica se a verificação inicial terminou
-
+    const [user, setUser] = useState(null); 
+    const [isLoading, setIsLoading] = useState(true); 
+    
+    // Inicializa o hook de navegação
+    const navigate = useNavigate(); 
+    
     // =========================================================
     // 1. Efeito de Inicialização: Verifica a sessão na montagem
     // =========================================================
     useEffect(() => {
-        // Função auxiliar para buscar os dados do usuário e atualizar o estado
         const fetchAndSetUser = async () => {
             try {
                 const userData = await userService.getUserData();
@@ -33,10 +34,10 @@ export const AuthProvider = ({ children }) => {
                 setIsAuthenticated(true);
                 return true;
             } catch (error) {
-                // Se falhar (token inválido), o usuário será forçado a deslogar ou atualizar
+                // Se o token falhar, limpa o estado
                 setUser(null);
                 setIsAuthenticated(false);
-                throw error;
+                return false;
             }
         };
 
@@ -45,17 +46,16 @@ export const AuthProvider = ({ children }) => {
 
             if (hasAccessToken) {
                 try {
-                    // MUDANÇA: Tenta buscar os dados do usuário para validar o token
+                    // Tenta buscar os dados com o token atual
                     await fetchAndSetUser(); 
                 } catch (error) {
-                    console.warn("Access Token inválido na inicialização. Tentando Refresh...");
+                    // Se a busca falhar, o token expirou. Tenta renovar.
                     try {
-                        // Tenta refresh se o access token falhar
                         await handleRefreshToken();
-                        // Se o refresh for bem-sucedido, busca os dados novamente com o novo token
-                        await fetchAndSetUser();
+                        await fetchAndSetUser(); // Busca dados após o refresh
                     } catch (refreshError) {
-                         // Se o refresh falhar, o logout já é chamado em handleRefreshToken
+                        // Se o refresh falhar, o usuário está deslogado.
+                        console.error("Sessão expirada. Redirecionando para login.");
                         setIsAuthenticated(false);
                         setUser(null);
                     }
@@ -65,23 +65,25 @@ export const AuthProvider = ({ children }) => {
         };
 
         checkInitialAuth();
-    }, []);
+    }, []); // Executa apenas na montagem
 
     // =========================================================
     // 2. Funções de Manipulação de Sessão
     // =========================================================
 
-    const handleLogin = async (username, password) => {
+    const handleLogin = async (username, password, redirectTo = '/') => {
         setIsLoading(true);
         try {
-            // 1. Faz o Login e salva os tokens
             await userService.login(username, password); 
             
-            // 2. MUDANÇA: Busca e salva os dados do usuário após o login
             const userData = await userService.getUserData();
             setUser(userData); 
 
             setIsAuthenticated(true);
+            
+            // 👈 REDIRECIONAMENTO APÓS SUCESSO
+            navigate(redirectTo, { replace: true }); 
+            
             return userData;
         } catch (error) {
             console.error('Falha no Login:', error);
@@ -91,10 +93,13 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const handleLogout = () => {
+    const handleLogout = (redirectTo = '/login') => {
         userService.logout();
         setIsAuthenticated(false);
         setUser(null); 
+        
+        // 👈 REDIRECIONAMENTO APÓS LOGOUT
+        navigate(redirectTo, { replace: true });
     };
 
     const handleRefreshToken = async () => {
@@ -110,7 +115,7 @@ export const AuthProvider = ({ children }) => {
             setIsAuthenticated(false);
             setUser(null);
             console.error("Falha no Refresh Token. Usuário deslogado.");
-            throw error;
+            throw error; // Propaga o erro para que o useEffect lide com ele, se necessário
         }
     };
 
@@ -127,9 +132,7 @@ export const AuthProvider = ({ children }) => {
         refreshToken: handleRefreshToken, 
     };
 
-    // Retorna o provedor com o valor do contexto
     if (isLoading) {
-        // Você pode retornar um componente de Loading global aqui
         return <div>Carregando autenticação...</div>; 
     }
 
@@ -140,9 +143,18 @@ export const AuthProvider = ({ children }) => {
     );
 };
 
-// Exemplo de como envolver sua aplicação:
+// =========================================================
+// 4. Componente Wrapper para usar o AuthProvider
+// =========================================================
+
 /*
-<AuthProvider>
-  <AppRoutes />
-</AuthProvider>
-*/
+ * Este componente garante que o AuthProvider tenha acesso ao hook useNavigate,
+ * pois ele será chamado dentro do BrowserRouter.
+ */
+export const AuthProviderWrapper = ({ children }) => {
+    return (
+        <AuthProvider>
+            {children}
+        </AuthProvider>
+    )
+}
