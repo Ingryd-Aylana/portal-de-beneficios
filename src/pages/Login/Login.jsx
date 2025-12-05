@@ -3,6 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext.jsx'
 import Carousel from '../../components/Carousel.jsx'
 import '../../styles/Login.css'
+import { userService } from '../../services/userService.js'
 
 export default function Login() {
   const [email, setEmail] = useState('')
@@ -11,7 +12,6 @@ export default function Login() {
   const [isLoggingIn, setIsLoggingIn] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
-  const { login } = useAuth()
 
   // MUDANÇA 1: Função agora é assíncrona
   async function handleSubmit(e) {
@@ -21,7 +21,7 @@ export default function Login() {
 
     try {
 
-      await login(email, password)
+      await userService.login(email, password)
 
       // MUDANÇA 3: Navegação na rota de sucesso
       const redirectTo = location.state?.from?.pathname || '/'
