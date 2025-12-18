@@ -3,8 +3,28 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext.jsx'
 import '../styles/Sidebar.css'
 
+const navConfig = {
+  cliente: [
+    { to: '/', label: 'Início' },
+    { to: '/importacao', label: 'Importação' },
+    { to: '/faturamento', label: 'Faturamento' },
+    { to: '/pendentes', label: 'Pendentes' },
+    { to: '/historico', label: 'Histórico' },
+    { to: '/relatorios', label: 'Relatórios' },
+    { to: '/configuracoes', label: 'Configurações' },
+    // Temporariamente para acesso rápido
+    { to: '/colaborador/dashboard', label: 'Dashboard Fedcorp' },
+  ],
+  colaborador_fedcorp: [
+    { to: '/colaborador/dashboard', label: 'Dashboard' },
+    { to: '/pendentes', label: 'Pendentes' },
+    { to: '/colaborador/importar-faturamento', label: 'Importar Faturamento' },
+    { to: '/colaborador/historico', label: 'Histórico' },
+  ],
+}
+
 export default function Sidebar() {
-  const { logout } = useAuth()
+  const { logout, user } = useAuth()
   const navigate = useNavigate()
 
   function handleLogout() {
@@ -12,29 +32,34 @@ export default function Sidebar() {
     navigate('/login')
   }
 
+  const role = user?.role || 'cliente'
+  const menuItems = navConfig[role] || navConfig.cliente
+
   return (
     <aside className="sidebar">
-      
       <div className="logo-sidebar">
         <img
-          src="src\public\imagens\logo2.png"
+          src="\src\public\imagens\logo2.png"
           alt="Fedcorp Logo"
           className="logoImg"
         />
       </div>
-       <div className="logout-section"></div>
 
       <nav className="nav">
-        <NavLink to="/" className={({ isActive }) => (isActive ? 'active' : '')}>Início</NavLink>
-        <NavLink to="/importacao" className={({ isActive }) => (isActive ? 'active' : '')}>Importação</NavLink>
-        <NavLink to="/faturamento" className={({ isActive }) => (isActive ? 'active' : '')}>Faturamento</NavLink>
-        <NavLink to="/pendentes" className={({ isActive }) => (isActive ? 'active' : '')}>Pendentes</NavLink>
-        <NavLink to="/historico" className={({ isActive }) => (isActive ? 'active' : '')}>Histórico</NavLink>
-        <NavLink to="/relatorios" className={({ isActive }) => (isActive ? 'active' : '')}>Relatórios</NavLink>
-        <NavLink to="/configuracoes" className={({ isActive }) => (isActive ? 'active' : '')}>Configurações</NavLink>
+        {menuItems.map((item) => (
+          <NavLink
+            key={item.to}
+            to={item.to}
+            className={({ isActive }) => (isActive ? 'active' : '')}
+          >
+            {item.label}
+          </NavLink>
+        ))}
 
         <div className="logout-section">
-          <a onClick={handleLogout} role="button" className="logout-link">Sair</a>
+          <a onClick={handleLogout} role="button" className="logout-link">
+            Sair
+          </a>
         </div>
       </nav>
     </aside>

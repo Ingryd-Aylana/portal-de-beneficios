@@ -1,8 +1,8 @@
 import React, { use, useMemo, useState } from 'react'
-import FileUpload from '../components/FileUpload'
+import FileUpload from '../../components/FileUpload'
 import { PencilLine, Trash2, Check, X as XIcon } from 'lucide-react'
-import '../styles/Importacao.css'
-import { uploadService } from '../services/uploadService'
+import '../../styles/Importacao.css'
+import { uploadService } from '../../services/uploadService'
 
 const importacoesRecentes = [
   { id: 'IMP-001', arquivo: 'folha_janeiro.txt', registros: 1250, status: 'sucesso', tipo: 'compra', data: '2025-10-10' },

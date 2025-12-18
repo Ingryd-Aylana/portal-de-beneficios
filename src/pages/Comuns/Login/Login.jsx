@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react'; 
 import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext.jsx'; 
-import Carousel from '../../components/Carousel.jsx';
-import '../../styles/Login.css';
+import { useAuth } from '../../../context/AuthContext.jsx';
+import Carousel from '../../../components/Carousel.jsx';
+import '../../../styles/Login.css';
 
 
 export default function Login() {
@@ -15,9 +15,6 @@ export default function Login() {
   
   const { isAuthenticated, isLoading, login } = useAuth(); 
 
-  // =========================================================
-  // LÓGICA DE REDIRECIONAMENTO DE USUÁRIO AUTENTICADO
-  // =========================================================
   useEffect(() => {
     if (!isLoading && isAuthenticated) {
       console.log("Usuário já autenticado. Redirecionando para /");
@@ -25,9 +22,6 @@ export default function Login() {
     }
   }, [isAuthenticated, isLoading, navigate]);
 
-  // =========================================================
-  // LÓGICA DE SUBMISSÃO (LOGIN)
-  // =========================================================
   async function handleSubmit(e) {
     e.preventDefault();
     setError('');
@@ -65,7 +59,7 @@ export default function Login() {
         <div className="login-left">
           <div className="login-brand">
             <img
-              src="https://i.postimg.cc/Gh597vbr/LOGO.png"
+              src="src/public/imagens/LOGO.png"
               alt="Fedcorp Logo"
               className="logoImg"
             />

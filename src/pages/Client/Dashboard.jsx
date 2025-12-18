@@ -14,9 +14,9 @@ import {
     ChevronDown,
     ChevronUp
 } from 'lucide-react'
-import '../styles/Dashboard.css'
-import { entebenService } from '../services/entebenService'
-import PendenciasDoDiaModal from '../components/PendenciasDoDiaModal'
+import '../../styles/Dashboard.css'
+import { entebenService } from '../../services/entebenService'
+import PendenciasDoDiaModal from '../../components/PendenciasDoDiaModal'
 
 /* Utils */
 const formatCurrency = (n) =>

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Upload, UserPlus } from 'lucide-react'
 import '../styles/AdicionarColaboradores.css'
-import CadastroColaboradorModal from '../components/CadastroColaboradorModal'
+import CadastroColaboradorModal from '../../components/CadastroColaboradorModal'
 
 // Mock básico de benefícios por condomínio (use o mesmo do histórico)
 const condominiosMock = [

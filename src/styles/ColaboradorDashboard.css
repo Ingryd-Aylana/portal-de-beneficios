@@ -1,0 +1,200 @@
+.colaborador-dashboard {
+    width: 100%;
+}
+
+.colab-stats {
+    background-color: #f2f3f5;
+    border-radius: 10px;
+    display: grid;
+    grid-template-columns: repeat(3, minmax(180px, 1fr));
+    gap: 12px;
+    margin: 14px 0 18px;
+}
+
+.colab-stat-card {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+    padding: 14px;
+}
+
+.colab-stat-title {
+    opacity: 0.8;
+    font-size: 13px;
+    margin-bottom: 6px;
+}
+
+.colab-stat-value {
+    font-size: 22px;
+    font-weight: 700;
+}
+
+.colab-filters {
+    display: flex;
+    background-color: #f2f3f5;
+    border-radius: 10px;
+    gap: 10px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+}
+
+.colab-search {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 12px;
+    border-radius: 10px;
+    min-width: 280px;
+    flex: 1;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.colab-search input {
+    width: 100%;
+    background: transparent;
+    border: 0;
+    outline: none;
+    color: inherit;
+}
+
+.colab-select {
+    padding: 10px 12px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: inherit;
+}
+
+.colab-table-wrap {
+    overflow: auto;
+    border-radius: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.colab-table {
+    width: 100%;
+    border-collapse: collapse;
+    min-width: 980px;
+}
+
+.colab-table thead th {
+    background-color: #0F3D5D;
+    color: white;
+    text-align: left;
+    font-size: 12px;
+    opacity: 0.85;
+    padding: 12px;
+
+}
+
+.colab-table tbody td {
+    padding: 12px;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    vertical-align: middle;
+}
+
+.colab-empty {
+    padding: 18px !important;
+    text-align: center;
+    opacity: 0.85;
+}
+
+.colab-id-main {
+    font-weight: 700;
+}
+
+.colab-id-sub {
+    font-size: 12px;
+    opacity: 0.75;
+    margin-top: 3px;
+}
+
+.colab-condominio {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+}
+
+.colab-condominio-name {
+    font-weight: 600;
+}
+
+.colab-condominio-sub {
+    font-size: 12px;
+    opacity: 0.75;
+    margin-top: 2px;
+}
+
+.colab-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    opacity: 0.95;
+}
+
+.colab-badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 6px 10px;
+    border-radius: 999px;
+    font-size: 12px;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.colab-badge.aprovado {
+    background: rgba(46, 204, 113, 0.12);
+    border-color: rgba(46, 204, 113, 0.22);
+}
+
+.colab-badge.em_faturamento {
+    background: rgba(241, 196, 15, 0.12);
+    border-color: rgba(241, 196, 15, 0.22);
+}
+
+.colab-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 12px;
+    border-radius: 10px;
+    cursor: pointer;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: rgba(255, 255, 255, 0.06);
+    color: inherit;
+    font-weight: 600;
+}
+
+.colab-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.colab-hint {
+    margin-top: 14px;
+    font-size: 13px;
+    opacity: 0.9;
+    background-color: #bae1e6;
+    border-radius: 8px;
+}
+
+.icon-dica {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 10px;
+    border-radius: 10px;
+}
+
+.icon-dica svg {
+    width: 20px;
+    height: 18px;
+    flex-shrink: 0;
+}
+
+.icon-dica span {
+    line-height: 1.4;
+}

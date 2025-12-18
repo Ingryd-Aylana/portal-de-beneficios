@@ -12,7 +12,7 @@ import {
     CheckCircle,
     AlertCircle
 } from 'lucide-react'
-import '../styles/Relatorios.css'
+import '../../styles/Relatorios.css'
 
 export default function RelatoriosBeneficios() {
     const [filtros, setFiltros] = useState({
@@ -51,15 +51,7 @@ export default function RelatoriosBeneficios() {
 
     return (
         <div className="rel-page">
-            {/* HEADER */}
-            <div className="rel-header">
-                <div>
-                    <h1>Relatórios de Benefícios</h1>
-                    <p>Extraia relatórios consolidados de pedidos, notas e taxas da plataforma</p>
-                </div>
-            </div>
-
-            {/* FILTROS */}
+            
             <div className="rel-filters card pad">
                 <div className="rel-filters-head">
                     <div className="rel-filters-title">
@@ -112,9 +104,8 @@ export default function RelatoriosBeneficios() {
                 </div>
             </div>
 
-            {/* CARDS DE RELATÓRIO */}
             <div className="rel-grid">
-                {/* DETALHAMENTO DO PEDIDO - EXCEL */}
+
                 <div className="card rel-card">
                     <div className="rel-card-head">
                         <div className="rel-card-ico rel-ico-green">
@@ -141,61 +132,7 @@ export default function RelatoriosBeneficios() {
                     </div>
                 </div>
 
-                {/* NOTAS DE DÉBITO */}
-                <div className="card rel-card">
-                    <div className="rel-card-head">
-                        <div className="rel-card-ico rel-ico-orange">
-                            <FileText className="ico xl" />
-                        </div>
-                        <div>
-                            <h2>Notas de Débito</h2>
-                            <p>Relatório das notas de débito geradas a partir dos pedidos de benefícios.</p>
-                        </div>
-                    </div>
-                    <ul className="rel-card-list">
-                        <li>Notas de débito por condomínio e período</li>
-                        <li>Valores, número da nota e referência do pedido</li>
-                        <li>Exportação em Excel ou PDF</li>
-                    </ul>
-                    <div className="rel-card-footer">
-                        <button
-                            className="btn btn-light"
-                            onClick={() => handleExport('Notas de Débito', 'pdf')}
-                        >
-                            <Download className="ico" />
-                            <span>PDF</span>
-                        </button>
-                    </div>
-                </div>
 
-                {/* NOTAS FISCAIS */}
-                <div className="card rel-card">
-                    <div className="rel-card-head">
-                        <div className="rel-card-ico rel-ico-blue">
-                            <Receipt className="ico xl" />
-                        </div>
-                        <div>
-                            <h2>Notas Fiscais</h2>
-                            <p>Consolidação das notas fiscais emitidas relacionadas aos benefícios.</p>
-                        </div>
-                    </div>
-                    <ul className="rel-card-list">
-                        <li>Lista de NF por período e condomínio</li>
-                        <li>Códigos, série, valores e impostos</li>
-                        <li>Auxilia na conferência com contabilidade</li>
-                    </ul>
-                    <div className="rel-card-footer">
-                        <button
-                            className="btn btn-light"
-                            onClick={() => handleExport('Notas Fiscais', 'pdf')}
-                        >
-                            <Download className="ico" />
-                            <span>PDF</span>
-                        </button>
-                    </div>
-                </div>
-
-                {/* DEPARTAMENTO / NOME - TAXAS DETALHADAS */}
                 <div className="card rel-card">
                     <div className="rel-card-head">
                         <div className="rel-card-ico rel-ico-purple">
@@ -229,7 +166,58 @@ export default function RelatoriosBeneficios() {
                     </div>
                 </div>
 
-                {/* RECARGA ASSINATURA */}
+                <div className="card rel-card">
+                    <div className="rel-card-head">
+                        <div className="rel-card-ico rel-ico-orange">
+                            <FileText className="ico xl" />
+                        </div>
+                        <div>
+                            <h2>Notas de Débito</h2>
+                            <p>Relatório das notas de débito geradas a partir dos pedidos de benefícios.</p>
+                        </div>
+                    </div>
+                    <ul className="rel-card-list">
+                        <li>Notas de débito por condomínio e período</li>
+                        <li>Valores, número da nota e referência do pedido</li>
+                        <li>Exportação em Excel ou PDF</li>
+                    </ul>
+                    <div className="rel-card-footer">
+                        <button
+                            className="btn btn-light"
+                            onClick={() => handleExport('Notas de Débito', 'pdf')}
+                        >
+                            <Download className="ico" />
+                            <span>PDF</span>
+                        </button>
+                    </div>
+                </div>
+
+                <div className="card rel-card">
+                    <div className="rel-card-head">
+                        <div className="rel-card-ico rel-ico-blue">
+                            <Receipt className="ico xl" />
+                        </div>
+                        <div>
+                            <h2>Notas Fiscais</h2>
+                            <p>Consolidação das notas fiscais emitidas relacionadas aos benefícios.</p>
+                        </div>
+                    </div>
+                    <ul className="rel-card-list">
+                        <li>Lista de NF por período e condomínio</li>
+                        <li>Códigos, série, valores e impostos</li>
+                        <li>Auxilia na conferência com contabilidade</li>
+                    </ul>
+                    <div className="rel-card-footer">
+                        <button
+                            className="btn btn-light"
+                            onClick={() => handleExport('Notas Fiscais', 'pdf')}
+                        >
+                            <Download className="ico" />
+                            <span>PDF</span>
+                        </button>
+                    </div>
+                </div>
+
                 <div className="card rel-card">
                     <div className="rel-card-head">
                         <div className="rel-card-ico rel-ico-teal">
@@ -257,7 +245,6 @@ export default function RelatoriosBeneficios() {
                 </div>
             </div>
 
-            {/* TOAST */}
             <div
                 className={`rel-toast-wrap ${toast.open ? 'show' : ''}`}
                 role="status"

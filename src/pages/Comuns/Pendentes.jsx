@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react'
 import { CheckCircle, XCircle, Clock, Send, Building2, Users, Calendar, Search } from 'lucide-react'
-import '../styles/Pendentes.css'
+import '../../styles/Pendentes.css'
 
 const pendenciasKanban = [
   { id: 1, tipo: 'Vale Alimentação', descricao: 'Processamento mensal - Janeiro/2025', qtd: 45, origem: 'Condomínio Sol Nascente', condominio: 'Condomínio Sol Nascente', cnpj: '01.234.567/0001-89', data: '2025-01-15', valor: 'R$ 22.500,00', status: 'pendente' },

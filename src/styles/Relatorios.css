@@ -24,8 +24,6 @@
   font-size: 0.95rem;
 }
 
-/* Filtros */
-
 .rel-filters {
   margin-bottom: 20px;
 }
@@ -98,8 +96,6 @@
   box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.1);
 }
 
-/* input com ícone */
-
 .input-with-ico {
   display: flex;
   align-items: center;
@@ -124,8 +120,6 @@
   font-size: 0.875rem;
   color: #111827;
 }
-
-/* GRID de relatórios */
 
 .rel-grid {
   display: grid;
@@ -165,8 +159,6 @@
   width: 20px;
   height: 20px;
 }
-
-/* cores dos ícones */
 
 .rel-ico-green {
   background: #ecfdf3;
@@ -222,11 +214,6 @@
   flex-wrap: wrap;
   gap: 8px;
 }
-
-/* Botões – assumindo que .btn, .btn-primary, .btn-light já existem
-   Se não tiver, você pode adaptar ou reaproveitar das outras telas */
-
-/* TOAST */
 
 .rel-toast-wrap {
   position: fixed;
