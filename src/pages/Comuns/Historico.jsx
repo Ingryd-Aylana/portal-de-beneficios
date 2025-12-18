@@ -1,7 +1,7 @@
 import React, { useMemo, useState } from 'react'
-import DataTable from '../components/DataTable.jsx'
-import { historico as base } from '../utils/fakeData.js'
-import '../styles/Historico.css'
+import DataTable from '../../components/DataTable.jsx'
+import { historico as base } from '../../utils/fakeData.js'
+import '../../styles/Historico.css'
 
 export default function Historico() {
   const [inicio, setInicio] = useState('')

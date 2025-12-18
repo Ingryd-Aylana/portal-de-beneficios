@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Search } from 'lucide-react'
-import { acordosFaturamento as seed } from '../utils/fakeData.js'
-import '../styles/Faturamento.css'
+import { acordosFaturamento as seed } from '../../utils/fakeData.js'
+import '../../styles/Faturamento.css'
 
 const Chevron = ({ open }) => (
   <svg

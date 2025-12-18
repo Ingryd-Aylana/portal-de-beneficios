@@ -1,160 +1,183 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom'; // 👈 Importamos o useNavigate
-import { userService } from '../services/userService.js'; 
+import React, { createContext, useContext, useMemo, useState, useEffect } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { userService } from '../services/userService.js'
 
-// Criação do Contexto
-const AuthContext = createContext();
+const AuthContext = createContext(null)
 
-/**
- * Hook customizado para usar o Auth Context.
- */
-export const useAuth = () => {
-    return useContext(AuthContext);
-};
+export const useAuth = () => useContext(AuthContext)
 
-/**
- * Componente Provedor de Autenticação.
- */
+const normalizeUser = (userData) => {
+  if (!userData) return null
+
+  const rawRole =
+    userData.role ??
+    userData.perfil ??
+    userData.tipo ??
+    userData.userRole ??
+    null
+
+  const role = rawRole || 'cliente'
+
+  return {
+    ...userData,
+    role,
+  }
+}
+
 export const AuthProvider = ({ children }) => {
-    const [isAuthenticated, setIsAuthenticated] = useState(false);
-    const [user, setUser] = useState(null); 
-    const [isLoading, setIsLoading] = useState(true); 
-    
-    // Inicializa o hook de navegação
-    const navigate = useNavigate(); 
-    
-    // =========================================================
-    // 1. Efeito de Inicialização: Verifica a sessão na montagem
-    // =========================================================
-    useEffect(() => {
-        const fetchAndSetUser = async () => {
-            try {
-                const userData = await userService.getUserData();
-                setUser(userData);
-                setIsAuthenticated(true);
-                return true;
-            } catch (error) {
-                // Se o token falhar, limpa o estado
-                setUser(null);
-                setIsAuthenticated(false);
-                return false;
-            }
-        };
+  const [isAuthenticated, setIsAuthenticated] = useState(false)
+  const [user, setUser] = useState(null)
+  const [isLoading, setIsLoading] = useState(true)
 
-        const checkInitialAuth = async () => {
-            const hasAccessToken = userService.isAuthenticated();
+  const navigate = useNavigate()
 
-            if (hasAccessToken) {
-                try {
-                    // Tenta buscar os dados com o token atual
-                    await fetchAndSetUser(); 
-                } catch (error) {
-                    // Se a busca falhar, o token expirou. Tenta renovar.
-                    try {
-                        await handleRefreshToken();
-                        await fetchAndSetUser(); // Busca dados após o refresh
-                    } catch (refreshError) {
-                        // Se o refresh falhar, o usuário está deslogado.
-                        console.error("Sessão expirada. Redirecionando para login.");
-                        setIsAuthenticated(false);
-                        setUser(null);
-                    }
-                }
-            }
-            setIsLoading(false); // Finaliza o carregamento inicial
-        };
+  const hasRole = (allowedRoles = []) => {
+    if (!allowedRoles?.length) return true
+    const currentRole = user?.role
+    return !!currentRole && allowedRoles.includes(currentRole)
+  }
 
-        checkInitialAuth();
-    }, []); // Executa apenas na montagem
+  const isColaboradorFedcorp = user?.role === 'colaborador_fedcorp'
+  const isCliente = user?.role === 'cliente'
 
-    // =========================================================
-    // 2. Funções de Manipulação de Sessão
-    // =========================================================
+  useEffect(() => {
+    let isMounted = true
 
-    const handleLogin = async (username, password, redirectTo = '/') => {
-        setIsLoading(true);
-        try {
-            await userService.login(username, password); 
-            
-            const userData = await userService.getUserData();
-            setUser(userData); 
+    const fetchAndSetUser = async () => {
+      const userData = await userService.getUserData()
+      const normalized = normalizeUser(userData)
 
-            setIsAuthenticated(true);
-            
-            // 👈 REDIRECIONAMENTO APÓS SUCESSO
-            navigate(redirectTo, { replace: true }); 
-            
-            return userData;
-        } catch (error) {
-            console.error('Falha no Login:', error);
-            throw error;
-        } finally {
-            setIsLoading(false);
-        }
-    };
+      if (!isMounted) return normalized
 
-    const handleLogout = (redirectTo = '/login') => {
-        userService.logout();
-        setIsAuthenticated(false);
-        setUser(null); 
-        
-        // 👈 REDIRECIONAMENTO APÓS LOGOUT
-        navigate(redirectTo, { replace: true });
-    };
-
-    const handleRefreshToken = async () => {
-        try {
-            await userService.refreshToken();
-            const userData = await userService.getUserData();
-            setUser(userData); 
-            
-            setIsAuthenticated(true);
-            return true;
-        } catch (error) {
-            // O userService.refreshToken já chama o logout interno em caso de falha.
-            setIsAuthenticated(false);
-            setUser(null);
-            console.error("Falha no Refresh Token. Usuário deslogado.");
-            throw error; // Propaga o erro para que o useEffect lide com ele, se necessário
-        }
-    };
-
-    // =========================================================
-    // 3. Estrutura do Contexto
-    // =========================================================
-
-    const authContextValue = {
-        isAuthenticated,
-        user,
-        isLoading,
-        login: handleLogin,
-        logout: handleLogout,
-        refreshToken: handleRefreshToken, 
-    };
-
-    if (isLoading) {
-        return <div>Carregando autenticação...</div>; 
+      setUser(normalized)
+      setIsAuthenticated(true)
+      return normalized
     }
 
-    return (
-        <AuthContext.Provider value={authContextValue}>
-            {children}
-        </AuthContext.Provider>
-    );
-};
+    const checkInitialAuth = async () => {
+      try {
+        const hasAccessToken = userService.isAuthenticated()
 
-// =========================================================
-// 4. Componente Wrapper para usar o AuthProvider
-// =========================================================
+        if (hasAccessToken) {
+          try {
+            await fetchAndSetUser()
+          } catch (error) {
+            await handleRefreshToken()
+            await fetchAndSetUser()
+          }
+        }
+      } catch (err) {
 
-/*
- * Este componente garante que o AuthProvider tenha acesso ao hook useNavigate,
- * pois ele será chamado dentro do BrowserRouter.
- */
-export const AuthProviderWrapper = ({ children }) => {
+        if (isMounted) {
+          setIsAuthenticated(false)
+          setUser(null)
+        }
+      } finally {
+        if (isMounted) setIsLoading(false)
+      }
+    }
+
+    checkInitialAuth()
+
+    return () => {
+      isMounted = false
+    }
+
+  }, [])
+  const handleLogin = async (username, password, redirectTo) => {
+    setIsLoading(true)
+    try {
+      await userService.login(username, password)
+
+      const userData = await userService.getUserData()
+      const normalized = normalizeUser(userData)
+
+      setUser(normalized)
+      setIsAuthenticated(true)
+
+      const defaultRedirect =
+        normalized?.role === 'colaborador_fedcorp'
+          ? '/colaborador/dashboard'
+          : '/'
+
+      navigate(redirectTo || defaultRedirect, { replace: true })
+
+      return normalized
+    } catch (error) {
+      console.error('Falha no Login:', error)
+      throw error
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
+  const handleLogout = (redirectTo = '/login') => {
+    userService.logout()
+    setIsAuthenticated(false)
+    setUser(null)
+    navigate(redirectTo, { replace: true })
+  }
+
+  const handleRefreshToken = async () => {
+    try {
+      await userService.refreshToken()
+      const userData = await userService.getUserData()
+      const normalized = normalizeUser(userData)
+
+      setUser(normalized)
+      setIsAuthenticated(true)
+      return true
+    } catch (error) {
+      setIsAuthenticated(false)
+      setUser(null)
+      console.error('Falha no Refresh Token. Usuário deslogado.')
+      throw error
+    }
+  }
+
+  const reloadUser = async () => {
+    try {
+      const userData = await userService.getUserData()
+      const normalized = normalizeUser(userData)
+      setUser(normalized)
+      return normalized
+    } catch (error) {
+      console.error('Falha ao recarregar usuário:', error)
+      throw error
+    }
+  }
+
+  const authContextValue = useMemo(
+    () => ({
+      isAuthenticated,
+      user,
+      isLoading,
+      hasRole,
+      isColaboradorFedcorp,
+      isCliente,
+      login: handleLogin,
+      logout: handleLogout,
+      refreshToken: handleRefreshToken,
+      reloadUser,
+    }),
+    [isAuthenticated, user, isLoading]
+  )
+
+  if (isLoading) {
     return (
-        <AuthProvider>
-            {children}
-        </AuthProvider>
+      <div style={{ padding: 16 }}>
+        Carregando autenticação…
+      </div>
     )
+  }
+
+  return (
+    <AuthContext.Provider value={authContextValue}>
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
+export const AuthProviderWrapper = ({ children }) => {
+  return <AuthProvider>{children}</AuthProvider>
 }

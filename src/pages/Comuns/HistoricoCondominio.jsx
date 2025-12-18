@@ -6,7 +6,7 @@ import {
     Calendar,
     DollarSign,
 } from 'lucide-react'
-import '../styles/Dashboard.css'
+import '../../styles/Dashboard.css'
 
 const condominios = [
     {

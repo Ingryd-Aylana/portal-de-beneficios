@@ -3,7 +3,7 @@ import {
   Building2, Plus, Upload, Download, Save, X,
   CheckCircle, AlertCircle, FileSpreadsheet, Users, MapPin, Phone, Trash2, Search
 } from 'lucide-react'
-import '../styles/Configuracao.css'
+import '../../styles/Configuracao.css'
 
 async function ensureXLSX() {
   if (window.XLSX) return window.XLSX

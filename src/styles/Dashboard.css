@@ -2,7 +2,7 @@
   padding: 24px;
   max-width: 1400px;
   margin: 0 auto;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  
 }
 
 .header--with-tools {
@@ -391,7 +391,7 @@
 
 .card-title {
   font-size: 10px;
-  font-weight: 500;
+  font-weight: 600 !important;
   color: #6b7280;
   text-transform: uppercase;
   margin: 0;
@@ -1059,8 +1059,6 @@
     padding: 14px;
   }
 }
-
-/* Adc colaboradores */
 
 .action-btn {
   padding: 10px 18px;
