@@ -14,6 +14,7 @@ import ConfiguracaoCondominios from './pages/Client/Configuracoes.jsx'
 import RelatoriosBeneficios from './pages/Client/RelatoriosBeneficios.jsx'
 
 import ColaboradorDashboard from './pages/Interno/ColaboradorDashboard.jsx'
+import ImportacaoDocs from './pages/Interno/ImportacaoDocs.jsx'
 
 import { AuthProvider } from './context/AuthContext.jsx'
 import ProtectedRoute from './routes/ProtectedRoute.jsx'
@@ -32,6 +33,7 @@ function Layout() {
 
     // Colaborador
     '/colaborador/dashboard': 'Dashboard Fedcorp',
+    '/colaborador/importacaoDocs': 'Importação Fedcorp',
   }
 
   const title = titles[location.pathname] ?? 'Portal de Benefícios'
@@ -54,6 +56,7 @@ function Layout() {
             <Route path="/configuracoes" element={<ConfiguracaoCondominios />} />
             <Route path="/relatorios" element={<RelatoriosBeneficios />} />
             <Route path="/colaborador/dashboard" element={<ColaboradorDashboard />} />
+            <Route path="/colaborador/importacaoDocs" element={< ImportacaoDocs/>} />
 
             {/* COLABORADOR FEDCORP */}
             <Route
