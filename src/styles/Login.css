@@ -1,187 +1,226 @@
-.logoImg {
-  height: 88px;
-  width: 188px !important;
-  object-fit: contain;
+.gradient-bg {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(to bottom right, #0F3D5D, #D3D3D2);
 }
 
-.login-form .input,
-.login-form select,
-.login-form .button {
-  width: 100%;
-}
-
-.login-form .button {
-  margin-top: 6px;
-}
-
-.login-form .input:focus,
-.login-form select:focus,
-.login-form .button:focus {
-  outline: 2px solid color-mix(in srgb, var(--primary) 60%, transparent);
-  outline-offset: 2px;
-  box-shadow: 0 0 0 3px rgba(14, 165, 233, 0.15);
-}
-
-.button.primary:hover {
-  filter: brightness(0.97);
-}
-.button.primary:active {
-  transform: translateY(1px);
-}
-
-
-.login-shell {
-  min-height: 100vh;
-  display: grid;
-  place-items: center;
-  padding: 24px;
-  background: var(--bg);
-}
-
-.login-card {
-  width: min(100%, 980px);
-  height: 540px;
-  background: var(--panel);
-  border: 1px solid var(--border);
-  border-radius: 18px;
-  display: grid;
-  grid-template-columns: 380px 1fr;
-  overflow: hidden;
-  box-shadow: 0 10px 30px rgba(2, 6, 23, 0.06);
-}
-
-.login-left {
-  padding: 24px;
-  display: grid;
-  grid-template-rows: auto 1fr;
-  gap: 12px;
-}
-
-.login-brand {
+.login-wrapper {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 8px 0 4px 0;
+  min-height: 100vh;
+  width: 100vw;
+  font-family: sans-serif;
+  padding: 1rem;
+  box-sizing: border-box;
 }
 
-.login-form {
-  display: grid;
-  gap: 10px;
-  align-content: start;
-}
-
-.login-right {
-  position: relative;
-  background: linear-gradient(135deg, rgba(14, 165, 233, 0.15), rgba(56, 189, 248, 0.15));
-}
-
-@media (min-width: 1280px) {
-  .login-card {
-    height: 600px;
-    max-width: 1100px;
-  }
-}
-
-.login-left {
-  grid-template-rows: auto auto 1fr;
-}
-
-.login-right::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to top,
-    rgba(2, 6, 23, 0.18),
-    rgba(2, 6, 23, 0.06) 40%,
-    transparent 70%
-  );
-  pointer-events: none;
-  mix-blend-mode: normal;
-}
-
-@media (pointer: coarse) {
-  .carousel-dots .dot {
-    width: 12px;
-    height: 12px;
-  }
-}
-
-@media (max-width: 860px) {
-  .login-shell {
-    padding: 16px;
-  }
-  .login-card {
-    border-radius: 14px;
-  }
-  .login-left {
-    padding: 20px;
-  }
-}
- /* Esqueci a senha */
-.voltar-btn {
-  display: inline-flex;
+.loginContainer {
+  display: flex;
+  justify-content: center;
   align-items: center;
-  gap: 6px;
-  padding: 4px 0;
-  border: none;
-  background: transparent;
-  font-size: 13px;
-  color: #000000;
-  cursor: pointer;
-  transition: color 0.15s ease, transform 0.15s ease;
+  width: 100%;
+  min-height: 100vh;
+  padding: 2rem;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
-.voltar-btn:hover {
-  color: #073950;
-  transform: translateX(-1px);
+.loginBox {
+  background-color: #fff;
+  border-radius: 16px;
+  padding: 2rem;
+  width: 100%;
+  max-width: 420px;
+  box-shadow: 0 0 12px rgba(0, 0, 0, 0.1);
 }
 
-.login-title {
-  font-size: 22px;
+.logoImg {
+  width: 200px;
+  height: auto;
+  margin: 0 auto 1.5rem;
+  display: block;
+}
+
+.titlePortal {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: #0F3D5D;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+
+.pPortal {
+  font-size: 1rem;
+  color: #444;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+/* Form */
+.inputGroup {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1.25rem;
+}
+
+.inputGroup label {
   font-weight: 600;
-  color: #073950;
-  margin: 4px 0 2px 0;
-  text-align: center;
+  margin-bottom: 0.35rem;
+  color: #0F3D5D;
 }
 
-.login-subtitle {
-  font-size: 13px;
-  color: #073950;
-  margin: 0 0 10px 0;
-  text-align: center;
+.inputGroup input {
+  padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  background: #fff;
 }
 
-.input-group {
+.inputGroup input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.2);
+  outline: none;
+}
+
+/* Senha + olho */
+.senhaWrapper {
   position: relative;
   display: flex;
   align-items: center;
 }
 
-.input-group .input {
-  padding-left: 38px;
+.senhaWrapper input {
+  width: 100%;
+  padding-right: 44px; /* espaço pro botão */
 }
 
-.input-icon {
+.togglePassword {
   position: absolute;
-  left: 10px;
+  right: 10px;
   top: 50%;
   transform: translateY(-50%);
-  font-size: 16px;
-  color: #073950;
-  pointer-events: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #555;
+  font-size: 1rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 6px;
+  border-radius: 8px;
 }
 
-.feedback {
-  margin-top: 8px;
-  padding: 8px 10px;
-  border-radius: 10px;
-  font-size: 13px;
+.togglePassword:hover {
+  background: rgba(15, 61, 93, 0.08);
+  color: #0F3D5D;
+}
+
+.togglePassword:focus {
+  outline: none;
+}
+
+/* Erro (agora bate com o JSX: error-message) */
+.error-message {
+  color: #c53030;
+  background-color: #ffe0e0;
+  border: 1px solid #ff9b9b;
+  padding: 12px;
+  border-radius: 8px;
   text-align: center;
+  margin: 0 0 1rem 0;
+  font-weight: 500;
 }
 
-.feedback.success {
-  background: rgba(22, 163, 74, 0.12);
-  border: 1px solid rgba(22, 163, 74, 0.55);
-  color: #000000;
+/* Botão */
+.loginButton {
+  width: 100%;
+  padding: 0.9rem;
+  background-color: #0F3D5D;
+  border: none;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 1rem;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.loginButton:hover {
+  background-color: #0c2f49; /* um hover mais coerente com o azul */
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+}
+
+.loginButton:active {
+  transform: scale(0.98);
+}
+
+.loginButton:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+/* Link esqueci a senha */
+.forgot-password {
+  display: block;
+  margin-top: 1rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: #0F3D5D;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.forgot-password:hover {
+  color: #0c2f49;
+  text-decoration: underline;
+}
+
+/* ✅ Responsivo - agora sem "left/right" pq não existe mais */
+@media (min-width: 769px) {
+  .logoImg {
+    width: 240px;
+  }
+
+  .loginBox {
+    padding: 2.5rem;
+    border-radius: 20px;
+  }
+}
+
+@media (max-width: 480px) {
+  .loginContainer {
+    padding: 1.25rem;
+  }
+
+  .loginBox {
+    padding: 1.5rem 1rem;
+    border-radius: 12px;
+  }
+
+  .titlePortal {
+    font-size: 1.2rem;
+  }
+
+  .pPortal {
+    font-size: 0.9rem;
+    margin-bottom: 1rem;
+  }
+
+  .inputGroup input {
+    font-size: 1rem;
+    padding: 0.7rem;
+  }
+
+  .loginButton {
+    font-size: 1rem;
+    padding: 0.75rem;
+  }
 }

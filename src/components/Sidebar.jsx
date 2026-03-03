@@ -8,13 +8,13 @@ const navConfig = {
     { to: '/', label: 'Início' },
     { to: '/importacao', label: 'Importação' },
     { to: '/faturamento', label: 'Faturamento' },
-    { to: '/pendentes', label: 'Pendentes' },
-    { to: '/historico', label: 'Histórico' },
+    // { to: '/pendentes', label: 'Pendentes' },
+    // { to: '/historico', label: 'Histórico' },
     { to: '/relatorios', label: 'Relatórios' },
     { to: '/configuracoes', label: 'Configurações' },
     // Temporariamente para acesso rápido
     { to: '/colaborador/dashboard', label: 'Dashboard Fedcorp' },
-    { to: '/colaborador/importacaoDocs', label: 'Importação Fedcorp' },
+    // { to: '/colaborador/importacaoDocs', label: 'Importação Fedcorp' },
   ],
   colaborador_fedcorp: [
     { to: '/colaborador/dashboard', label: 'Dashboard' },

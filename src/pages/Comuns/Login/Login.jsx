@@ -1,111 +1,111 @@
-import React, { useState, useEffect } from 'react'; 
-import { useNavigate, useLocation } from 'react-router-dom';
-import { useAuth } from '../../../context/AuthContext.jsx';
-import Carousel from '../../../components/Carousel.jsx';
-import '../../../styles/Login.css';
+import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import { FaEye, FaEyeSlash } from "react-icons/fa";
 
+import {useAuth} from "../../../context/AuthContext"; 
+import Carousel from "../../../components/Carousel"; 
+import logo from "../../../public/imagens/LOGO.png";
 
-export default function Login() {
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [error, setError] = useState('');
-  const [isLoggingIn, setIsLoggingIn] = useState(false);
-  
+import "../../../styles/Login.css"
+const Login = () => {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+
+  const { login } = useAuth();
   const navigate = useNavigate();
-  
-  const { isAuthenticated, isLoading, login } = useAuth(); 
 
-  useEffect(() => {
-    if (!isLoading && isAuthenticated) {
-      console.log("Usuário já autenticado. Redirecionando para /");
-      navigate('/', { replace: true });
-    }
-  }, [isAuthenticated, isLoading, navigate]);
+ const handleSubmit = async (event) => {
+  event.preventDefault();
+  setLoading(true);
+  setError("");
 
-  async function handleSubmit(e) {
-    e.preventDefault();
-    setError('');
-    setIsLoggingIn(true);
+  try {
+    await login(String(email ?? "").trim(), String(password ?? ""), "/Home");
+   
+  } catch (err) {
+    console.error("Erro de login no componente:", err);
 
-    try {
-      await login(email, password, '/'); 
-    } catch (err) {
-     
-      console.error('Erro de Login:', err);
-      
-      const message = 
-        err.message.includes('401') || err.message.includes('credenciais')
-        ? 'Credenciais inválidas. Verifique o usuário e a senha.'
-        : 'Falha ao conectar. Tente novamente mais tarde.';
+    const msg = String(err?.message || err);
+    const message =
+      msg.includes("401") || msg.toLowerCase().includes("credenciais")
+        ? "Credenciais inválidas. Verifique o usuário e a senha."
+        : "Ocorreu um erro inesperado durante o login.";
 
-      setError(message);
-    } finally {
-      setIsLoggingIn(false); 
-    }
+    setError(message);
+  } finally {
+    setLoading(false);
   }
+};
 
-  const handleForgotPassword = () => {
-    setError('Fluxo de recuperação de senha ainda não implementado.');
-  }
-  
-
-  if (isLoading) {
-    return <div>Verificando sessão...</div>;
-  }
-  
   return (
-    <div className="login-shell">
-      <div className="login-card">
-        <div className="login-left">
-          <div className="login-brand">
-            <img
-              src="src/public/imagens/LOGO.png"
-              alt="Fedcorp Logo"
-              className="logoImg"
-            />
-          </div>
-          
-          <form onSubmit={handleSubmit} className="login-form">
-            <div className="field">
-              <label>Login</label>
-              <input
-                className="input"
-                placeholder="Usuário"
-                value={email}
-                onChange={e => setEmail(e.target.value)}
-              />
-            </div>
-            <div className="field">
-              <label>Senha</label>
-              <input
-                className="input"
-                placeholder="Senha"
-                type="password"
-                value={password}
-                onChange={e => setPassword(e.target.value)}
-              />
-            </div>
-            
-            {error && <div className="status erro">{error}</div>}
-            
-            <button className="button primary" type="submit" disabled={isLoggingIn}>
-                {isLoggingIn ? 'Entrando...' : 'Entrar'}
-            </button>
-            
-            <button
-              type="button"
-              className="button ghost"
-              onClick={handleForgotPassword}
-            >
-              Esqueci a Senha
-            </button>
-          </form>
-        </div>
+    <>
+      <div className="gradient-bg"></div>
 
-        <div className="login-right">
-          <Carousel interval={3500} />
+      <div className="login-wrapper">
+        <div className="loginContainer">
+          <div className="loginBox">
+            <img src={logo} alt="Logo" className="logoImg" />
+
+            <h2 className="titlePortal">Portal de Benefícios</h2>
+            <p className="pPortal">Insira seus dados para acessar a plataforma</p>
+
+            <form onSubmit={handleSubmit}>
+              <div className="inputGroup">
+                <label htmlFor="email">E-mail:</label>
+                <input
+                  type="email"
+                  id="email"
+                  placeholder="Digite seu e-mail"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="username"
+                />
+              </div>
+
+              <div className="inputGroup senhaGroup">
+                <label htmlFor="senha">Senha:</label>
+
+                <div className="senhaWrapper">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    id="senha"
+                    placeholder="Digite sua senha"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    autoComplete="current-password"
+                  />
+
+                  <button
+                    type="button"
+                    className="togglePassword"
+                    onClick={() => setShowPassword((v) => !v)}
+                    aria-label={showPassword ? "Ocultar senha" : "Mostrar senha"}
+                  >
+                    {showPassword ? <FaEyeSlash /> : <FaEye />}
+                  </button>
+                </div>
+              </div>
+
+              {error && <p className="error-message">{error}</p>}
+
+              <button type="submit" className="loginButton" disabled={loading}>
+                {loading ? "Entrando..." : "Entrar"}
+              </button>
+
+              <a href="/esqueci-senha" className="forgot-password">
+                Esqueceu sua senha?
+              </a>
+            </form>
+          </div>
         </div>
       </div>
-    </div>
+    </>
   );
-}
+};
+
+export default Login;
