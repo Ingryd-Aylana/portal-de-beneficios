@@ -7,14 +7,12 @@ import {
 
 import '../../styles/ColaboradorDashboard.css'
 
-/* ─── Mock ────────────────────────────────────────────────── */
 const pedidosAprovadosMock = [
   { id:'FAT-2025-001', status:'aprovado',        dataVencimento:'18-10-2025', mesUtilizacao:'Dezembro/2025',  quantidadeDias:22, excelUrl:'/mock/pedidos/FAT-2025-001.xlsx', aprovadoEm:'10-12-2025' },
   { id:'FAT-2025-002', status:'aprovado',        dataVencimento:'10-12-2025', mesUtilizacao:'Dezembro/2025',  quantidadeDias:20, excelUrl:'/mock/pedidos/FAT-2025-002.xlsx', aprovadoEm:'05-10-2025' },
   { id:'FAT-2025-003', status:'em_faturamento',  dataVencimento:'20-12-2025', mesUtilizacao:'Fevereiro/2025', quantidadeDias:21, excelUrl:'/mock/pedidos/FAT-2025-003.xlsx', aprovadoEm:'10-12-2025' },
 ]
 
-/* ─── Utils ───────────────────────────────────────────────── */
 const fmtDate = (s) => {
   if (!s) return '-'
   const [d,m,y] = s.split('-')
@@ -23,7 +21,6 @@ const fmtDate = (s) => {
 const norm = (s) =>
   (s||'').toString().normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().trim()
 
-/* ─── Toast ──────────────────────────────────────────────── */
 function Toasts({ toasts, onClose }) {
   return (
     <div className="cf-toast-stack" aria-live="polite">
@@ -46,7 +43,6 @@ function Toasts({ toasts, onClose }) {
   )
 }
 
-/* ─── Confirm modal ──────────────────────────────────────── */
 function ConfirmModal({ open, title, message, onConfirm, onCancel }) {
   if (!open) return null
   return (
@@ -72,10 +68,8 @@ function ConfirmModal({ open, title, message, onConfirm, onCancel }) {
   )
 }
 
-/* ─── Badge label helper ─────────────────────────────────── */
 const statusLabel = { aprovado:'Aprovado', em_faturamento:'Em faturamento', faturado:'Faturado' }
 
-/* ─── Main Component ─────────────────────────────────────── */
 export default function ColaboradorDashboard() {
   const [search,        setSearch]        = useState('')
   const [statusFilter,  setStatusFilter]  = useState('todos')
@@ -90,7 +84,6 @@ export default function ColaboradorDashboard() {
   const [toasts,  setToasts]  = useState([])
   const [confirm, setConfirm] = useState({ open:false, title:'', message:'', onConfirm:null })
 
-  /* toast helpers */
   const pushToast = ({ type='info', title='', message='', duration=3500 }) => {
     const id = `${Date.now()}-${Math.random().toString(16).slice(2)}`
     setToasts(p => [...p, { id, type, title, message }])
@@ -98,14 +91,12 @@ export default function ColaboradorDashboard() {
   }
   const closeToast = id => setToasts(p => p.filter(t => t.id !== id))
 
-  /* stats */
   const stats = useMemo(() => ({
     total:    pedidos.length,
     aprovados: pedidos.filter(p => p.status==='aprovado').length,
     emFat:    pedidos.filter(p => p.status==='em_faturamento').length,
   }), [pedidos])
 
-  /* filtered list */
   const filtered = useMemo(() => {
     const q = norm(search)
     return pedidos.filter(p => {
@@ -114,7 +105,6 @@ export default function ColaboradorDashboard() {
     })
   }, [pedidos, search, statusFilter])
 
-  /* download */
   async function handleDownload(pedido) {
     try {
       setDownloadingId(pedido.id)

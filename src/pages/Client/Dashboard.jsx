@@ -6,7 +6,6 @@ import { entebenService } from '../../services/entebenService'
 
 import '../../styles/dashboard.css'
 
-/* ─── Utils ─────────────────────────────────────────────── */
 const formatCurrency = (n) =>
   `R$ ${Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
 
@@ -20,7 +19,6 @@ const normTxt = (s) =>
 
 const onlyDigits = (s) => (s || '').toString().replace(/\D/g, '')
 
-/* ─── Inline SVG Icon helper ─────────────────────────────── */
 const Ico = ({ d }) => (
   <svg
     viewBox="0 0 24 24"
@@ -49,7 +47,6 @@ export default function Dashboard() {
   const [acordos, setAcordos] = useState([])
   const [loading, setLoading] = useState(true)
 
-  // 🔎 filtro de condomínio (nome ou CNPJ)
   const [condoQuery, setCondoQuery] = useState('')
   const [selectedCondo, setSelectedCondo] = useState(null)
 
@@ -82,7 +79,6 @@ export default function Dashboard() {
     [acordos, todayStr]
   )
 
-  // resultados do filtro (CNPJ ou nome)
   const condoResults = useMemo(() => {
     const qTxt = normTxt(condoQuery)
     const qDigits = onlyDigits(condoQuery)
@@ -124,7 +120,6 @@ export default function Dashboard() {
       <main className="db-body">
         <h1 className="db-section-label">Resumo Geral</h1>
 
-        {/* 🔎 BUSCA DE CONDOMÍNIO (CNPJ ou Nome) */}
         <div className="db-condo-search-wrap">
           <div className="db-condo-search">
             <input
