@@ -18,9 +18,11 @@
 
 .cfg-actions {
     display: flex;
+    align-items: center;
     gap: 8px;
     margin-bottom: 16px;
     flex-wrap: wrap;
+    justify-items: center;
 }
 
 .btn {
@@ -686,7 +688,7 @@
 .cfg-filter-bar {
   margin-bottom: 16px;
   display: flex;
-  justify-content: flex-start;
+  justify-content: center;
 }
 
 .cfg-filter-search {
