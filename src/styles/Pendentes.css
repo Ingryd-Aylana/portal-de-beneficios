@@ -186,11 +186,9 @@
   font-size: 14px;
 }
 
-/* Responsivo */
 @media (max-width: 800px) {
   .kb-col { 
     min-width: 260px; 
-    /* tira o 70vh também */
     max-height: 100%;
   } 
   .kp-page { padding: 16px; }
@@ -237,8 +235,6 @@
   height: 18px;
 }
 
-
-/* Toolbar / Filtro de busca */
 .kp-toolbar {
   margin-bottom: 20px;
   padding: 16px 20px;

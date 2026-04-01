@@ -80,6 +80,17 @@
   font-size: 1rem;
   transition: all 0.2s ease;
   background: #fff;
+  color: #0a0a0a !important;
+}
+
+.emailGroup {
+   padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  background: #fff;
+  color: #0a0a0a !important;
 }
 
 .inputGroup input:focus {
@@ -88,7 +99,6 @@
   outline: none;
 }
 
-/* Senha + olho */
 .senhaWrapper {
   position: relative;
   display: flex;
@@ -97,7 +107,7 @@
 
 .senhaWrapper input {
   width: 100%;
-  padding-right: 44px; /* espaço pro botão */
+  padding-right: 44px; 
 }
 
 .togglePassword {
@@ -126,7 +136,6 @@
   outline: none;
 }
 
-/* Erro (agora bate com o JSX: error-message) */
 .error-message {
   color: #c53030;
   background-color: #ffe0e0;
@@ -138,7 +147,6 @@
   font-weight: 500;
 }
 
-/* Botão */
 .loginButton {
   width: 100%;
   padding: 0.9rem;
@@ -153,7 +161,7 @@
 }
 
 .loginButton:hover {
-  background-color: #0c2f49; /* um hover mais coerente com o azul */
+  background-color: #0c2f49; 
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
@@ -167,7 +175,6 @@
   box-shadow: none;
 }
 
-/* Link esqueci a senha */
 .forgot-password {
   display: block;
   margin-top: 1rem;
@@ -183,7 +190,6 @@
   text-decoration: underline;
 }
 
-/* ✅ Responsivo - agora sem "left/right" pq não existe mais */
 @media (min-width: 769px) {
   .logoImg {
     width: 240px;

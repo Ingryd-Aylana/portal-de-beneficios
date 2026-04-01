@@ -1,518 +1,1022 @@
-import React, { use, useMemo, useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import FileUpload from '../../components/FileUpload'
-import { PencilLine, Trash2, Check, X as XIcon } from 'lucide-react'
+import { PencilLine, Trash2, Check, X as XIcon, Eye } from 'lucide-react'
 import '../../styles/Importacao.css'
 import { uploadService } from '../../services/uploadService'
 
-const importacoesRecentes = [
-  { id: 'IMP-001', arquivo: 'folha_janeiro.txt', registros: 1250, status: 'sucesso', tipo: 'compra', data: '2025-10-10' },
-  { id: 'IMP-002', arquivo: 'folha_fevereiro.txt', registros: 980, status: 'erro', tipo: 'faturamento', data: '2025-10-08' },
-  { id: 'IMP-003', arquivo: 'folha_marco.csv', registros: 1340, status: 'sucesso', tipo: 'compra', data: '2025-10-05' },
-  { id: 'IMP-004', arquivo: 'folha_abril.txt', registros: 760, status: 'processando', tipo: 'faturamento', data: '2025-10-03' }
-]
-
-
 function Modal({ open, title, onClose, children }) {
-  if (!open) return null
-  return (
-    <div className="modal-overlay">
-      <div className="modal-card">
-        <div className="modal-header">
-          <h3>{title}</h3>
-          <button className="btn-ghost" onClick={onClose}>✕</button>
-        </div>
-        <div className="modal-body">{children}</div>
-        </div>
-    </div>
-  )
+  if (!open) return null
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal-card">
+        <div className="modal-header">
+          <h3>{title}</h3>
+          <button className="btn-ghost" onClick={onClose} type="button">✕</button>
+        </div>
+        <div className="modal-body">{children}</div>
+      </div>
+    </div>
+  )
 }
 
 const MESES = [
-  { label: 'Janeiro', value: '01' },
-  { label: 'Fevereiro', value: '02' },
-  { label: 'Março', value: '03' },
-  { label: 'Abril', value: '04' },
-  { label: 'Maio', value: '05' },
-  { label: 'Junho', value: '06' },
-  { label: 'Julho', value: '07' },
-  { label: 'Agosto', value: '08' },
-  { label: 'Setembro', value: '09' },
-  { label: 'Outubro', value: '10' },
-  { label: 'Novembro', value: '11' },
-  { label: 'Dezembro', value: '12' }
+  { label: 'Janeiro', value: '01' },
+  { label: 'Fevereiro', value: '02' },
+  { label: 'Março', value: '03' },
+  { label: 'Abril', value: '04' },
+  { label: 'Maio', value: '05' },
+  { label: 'Junho', value: '06' },
+  { label: 'Julho', value: '07' },
+  { label: 'Agosto', value: '08' },
+  { label: 'Setembro', value: '09' },
+  { label: 'Outubro', value: '10' },
+  { label: 'Novembro', value: '11' },
+  { label: 'Dezembro', value: '12' }
 ]
 
-function rangeAnos(qtd = 6) {
-  const anoAtual = new Date().getFullYear()
-    return Array.from({ length: qtd }, (_, i) => anoAtual - 2 + i)
+function getNomeColaborador(row) {
+  return row?.nome_funcionario || row?.nome_func || row?.colaborador || row?.nome || ''
 }
 
+function getValorRow(row) {
+  return Number(row?.valor_total || row?.valor || row?.valor_recarga_bene || 0)
+}
+
+function getCondominio(row) {
+  return row?.condominio || row?.nome_condominio || ''
+}
+
+function getCpf(row) {
+  return String(row?.cpf || row?.cpf_func || row?.cpf_funcionario || '').trim()
+}
+
+function getRowKey(row) {
+  const cpf = getCpf(row)
+  if (cpf) return `${getCondominio(row)}::${getNomeColaborador(row)}::${cpf}`
+  return `${getCondominio(row)}::${getNomeColaborador(row)}`
+}
+
+function formatCurrency(value) {
+  return Number(value || 0).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL'
+  })
+}
+
+function normalizeText(value) {
+  return String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .toUpperCase()
+}
+
+function onlyDigits(value) {
+  return String(value || '').replace(/\D/g, '')
+}
+
+function getNomeProduto(item) {
+  return (
+    item?.nome_produto ||
+    item?.produto_nome ||
+    item?.produto ||
+    item?.nome_beneficio ||
+    item?.beneficio_nome ||
+    item?.beneficio ||
+    item?.descricao_produto ||
+    item?.descricao ||
+    ''
+  )
+}
+
+function getCodigoProduto(item) {
+  return String(
+    item?.codigo_produto ||
+    item?.produto_codigo ||
+    item?.cod_produto ||
+    item?.codigo ||
+    ''
+  ).trim()
+}
+
+function getValorProduto(item) {
+  return Number(
+    item?.valor_recarga_bene ||
+    item?.valor_total ||
+    item?.valor ||
+    item?.valor_unitario ||
+    0
+  )
+}
+
+function getNomeMov(item) {
+  return item?.nome_funcionario || item?.nome_func || item?.colaborador || item?.nome || ''
+}
+
+function getCondominioMov(item) {
+  return item?.condominio || item?.nome_condominio || ''
+}
+
+function getCpfMov(item) {
+  return String(item?.cpf || item?.cpf_func || item?.cpf_funcionario || '').trim()
+}
+
+function buildBenefitsIndexes(movimentacoes = []) {
+  const byCondominioNomeCpf = new Map()
+  const byNomeCpf = new Map()
+  const byCondominioNome = new Map()
+
+  movimentacoes.forEach((item) => {
+    const nome = normalizeText(getNomeMov(item))
+    const condominio = normalizeText(getCondominioMov(item))
+    const cpf = onlyDigits(getCpfMov(item))
+
+    const beneficio = {
+      codigo: getCodigoProduto(item),
+      nome: getNomeProduto(item),
+      valor: getValorProduto(item)
+    }
+
+    if (!beneficio.nome) return
+
+    const keyCondominioNomeCpf = `${condominio}::${nome}::${cpf}`
+    const keyNomeCpf = `${nome}::${cpf}`
+    const keyCondominioNome = `${condominio}::${nome}`
+
+    if (cpf) {
+      if (!byCondominioNomeCpf.has(keyCondominioNomeCpf)) {
+        byCondominioNomeCpf.set(keyCondominioNomeCpf, [])
+      }
+      byCondominioNomeCpf.get(keyCondominioNomeCpf).push(beneficio)
+
+      if (!byNomeCpf.has(keyNomeCpf)) {
+        byNomeCpf.set(keyNomeCpf, [])
+      }
+      byNomeCpf.get(keyNomeCpf).push(beneficio)
+    }
+
+    if (!byCondominioNome.has(keyCondominioNome)) {
+      byCondominioNome.set(keyCondominioNome, [])
+    }
+    byCondominioNome.get(keyCondominioNome).push(beneficio)
+  })
+
+  return {
+    byCondominioNomeCpf,
+    byNomeCpf,
+    byCondominioNome
+  }
+}
+
+function enrichRowsWithBenefits(rows = [], movimentacoes = []) {
+  const indexes = buildBenefitsIndexes(movimentacoes)
+
+  return rows.map((row) => {
+    const nome = normalizeText(getNomeColaborador(row))
+    const condominio = normalizeText(getCondominio(row))
+    const cpf = onlyDigits(getCpf(row))
+
+    const keyCondominioNomeCpf = `${condominio}::${nome}::${cpf}`
+    const keyNomeCpf = `${nome}::${cpf}`
+    const keyCondominioNome = `${condominio}::${nome}`
+
+    const beneficios =
+      (cpf && indexes.byCondominioNomeCpf.get(keyCondominioNomeCpf)) ||
+      (cpf && indexes.byNomeCpf.get(keyNomeCpf)) ||
+      indexes.byCondominioNome.get(keyCondominioNome) ||
+      []
+
+    return {
+      ...row,
+      beneficios
+    }
+  })
+}
 
 export default function Importacao() {
-  const [items, setItems] = useState(importacoesRecentes)
-  const [data, setData] = useState()
-    const [lote, setLote] = useState({
-    id: null,
-    arquivo: null,
-    tipo: null,
-    rows: [],
-    excluidosPorColab: new Set()
-  })
+  const [data, setData] = useState(null)
 
-  // edição 
-  const [editingIndex, setEditingIndex] = useState(null)
-  const [editValue, setEditValue] = useState('')
-  // modal envio
-  const [modalOpen, setModalOpen] = useState(false)
+  const [lote, setLote] = useState({
+    id: null,
+    arquivo: null,
+    tipo: null,
+    rows: [],
+    excluidosPorColab: new Set()
+  })
 
-  const [formEnvio, setFormEnvio] = useState({
-    periodoInicio: '',
-    periodoFim: '',
-    competenciaMes: '',
-    competenciaAno: String(new Date().getFullYear()),
-    vencimento: ''
-  })
+  const [editingIndex, setEditingIndex] = useState(null)
+  const [editValue, setEditValue] = useState('')
+  const [modalOpen, setModalOpen] = useState(false)
 
-  function fakeParseRows(file) {
-    const nomes = ['Solar das Rosas', 'Condominio Parque Onix', 'Residencial Atlântico', 'Village das Palmeiras', 'Edificio São João']
-    const colabs = ['Ana Lima', 'Carlos Souza', 'João Pedro', 'Maria Fernanda']
-    const n = 24 + Math.floor(Math.random() * 26)
-    return Array.from({ length: n }).map(() => {
-      const condominio = nomes[Math.floor(Math.random() * nomes.length)]
-      const colaborador = colabs[Math.floor(Math.random() * colabs.length)]
-      const base = 1200 + Math.floor(Math.random() * 1800)
-      const valor = Math.random() < 0.2 ? (2600 + Math.floor(Math.random() * 1500)) : base
-      return { condominio, colaborador, valor }
-    })
-  }
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [detailsTitle, setDetailsTitle] = useState('')
+  const [detailsBenefits, setDetailsBenefits] = useState([])
 
-  async function handleResult({ status, file, rows }) {
-   try {
-        const response = await uploadService.uploadFile(file)
-        setData(response)
-       
-       
-        const id = 'IMP-' + response.file_upload_id
-        const tipo = file.name.toLowerCase().includes('fat') ? 'faturamento' : 'compra'
-        // [handleResult] Usa total_por_beneficiario da resposta, ou fallback para dados mockados
-        const parsed = response.summary?.total_por_beneficiario || fakeParseRows(file)
-        
-        setLote({ id, arquivo: file.name, tipo, rows: parsed, excluidosPorColab: new Set() })
-        setEditingIndex(null)
-        setEditValue('')
-        
-        // [handleResult] Retorna o sucesso para o componente FileUpload atualizar o status
-        return { success: true, message: response.detail || 'Importação concluída com sucesso.' };
-        
-    } catch (error) {
-        
-        const errorMessage = error.message.includes('API Error') ? error.message.split('API Error: ')[1] : 'Erro desconhecido na comunicação com o servidor.';
-        console.error("Erro no processamento da importação:", error);
+  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false)
+  const [colaboradorParaExcluir, setColaboradorParaExcluir] = useState(null)
 
-        // [handleResult] Retorna o erro para o componente FileUpload atualizar o status
-        return { success: false, message: errorMessage };
-    }
-  }
+  const [reviewOpen, setReviewOpen] = useState(false)
+  const [reviewData, setReviewData] = useState({
+    totalFuncionarios: 0,
+    totalMovimentacoes: 0,
+    valorTotalBeneficios: 0,
+    periodoInicio: '',
+    periodoFim: '',
+    competenciaMes: '',
+    competenciaAno: '',
+    vencimento: ''
+  })
 
-  // [useMemo] linhas ativas
-  const rowsAtivas = useMemo(() => {
-    if (!lote?.rows?.length) return []
-    if (!lote.excluidosPorColab?.size) return lote.rows
-    
-    return lote.rows.filter(r => !lote.excluidosPorColab.has(r.nome_funcionario || r.colaborador))
-  }, [lote])
+  const [formEnvio, setFormEnvio] = useState({
+    periodoInicio: '',
+    periodoFim: '',
+    competenciaMes: '',
+    competenciaAno: String(new Date().getFullYear()),
+    vencimento: ''
+  })
 
-  // [useMemo] validação (> 2500 bloqueia)
-  const linhasValidadas = useMemo(() =>
-    // [useMemo] Usa r.valor_total ou r.valor para compatibilidade com dados mockados/reais
-    rowsAtivas.map(r => ({ ...r, bloqueado: Number(r.valor_total || r.valor || r.valor_recarga_bene) > 2500 }))
- 
-  , [rowsAtivas])
+  async function handleResult({ file }) {
+    try {
+      const response = await uploadService.uploadFile(file)
+      setData(response)
 
-  const totalBloqueios = useMemo(
-    () => linhasValidadas.filter(r => r.bloqueado).length,
-    [linhasValidadas]
-  )
+      const id = 'IMP-' + response.file_upload_id
+      const tipo = file.name.toLowerCase().includes('fat') ? 'faturamento' : 'compra'
 
+      const previewRows = response?.summary?.total_por_beneficiario || []
+      const movimentacoes = response?.data_to_backend?.movimentacoes_detalhada || []
 
-  const podeEnviar = linhasValidadas.length > 0 && totalBloqueios === 0
+      const parsed = enrichRowsWithBenefits(previewRows, movimentacoes)
 
-  const excluirColaborador = (idx, row) => {
-    const colaboradorKey = row.nome_funcionario || row.colaborador; 
-    
-    if (!colaboradorKey) {
-      console.error("Chave do colaborador não encontrada para exclusão.");
-      return;
-    }
+      setLote({
+        id,
+        arquivo: file.name,
+        tipo,
+        rows: parsed,
+        excluidosPorColab: new Set()
+      })
 
-    const novo = new Set(lote.excluidosPorColab)
-    novo.add(colaboradorKey)
-    setLote(prev => ({ ...prev, excluidosPorColab: novo }))
-    
-    if (editingIndex !== null) { setEditingIndex(null); setEditValue('') }
-  }
+      setEditingIndex(null)
+      setEditValue('')
+      setDetailsOpen(false)
+      setDetailsTitle('')
+      setDetailsBenefits([])
+      setConfirmDeleteOpen(false)
+      setColaboradorParaExcluir(null)
+      setReviewOpen(false)
+      setReviewData({
+        totalFuncionarios: 0,
+        totalMovimentacoes: 0,
+        valorTotalBeneficios: 0,
+        periodoInicio: '',
+        periodoFim: '',
+        competenciaMes: '',
+        competenciaAno: '',
+        vencimento: ''
+      })
 
-
-  const iniciarEdicao = (idx, valorAtual) => {
-    setEditingIndex(idx)
-    setEditValue(String(valorAtual).replace(',', '.'))
-  }
-
-  const salvarEdicao = (idx) => {
-    const v = Number(editValue)
-    if (Number.isNaN(v) || v <= 0) return
-    const linha = linhasValidadas[idx]
-
-    const originalIndex = lote.rows.findIndex(r => {
-      const originalKey = `${r.condominio}-${r.colaborador || r.nome_funcionario}-${r.valor || r.valor_total || r.valor_recarga_bene}`
-      const currentKey = `${linha.condominio}-${linha.colaborador || linha.nome_funcionario}-${linha.valor || linha.valor_total || linha.valor_recarga_bene}`
-      return originalKey === currentKey
-    })
-
-    if (originalIndex >= 0) {
-      const clone = [...lote.rows]
-      // [salvarEdicao] Determina a chave de valor para atualizar 
-      const valorKey = clone[originalIndex].hasOwnProperty('valor_total') ? 'valor_total' : clone[originalIndex].hasOwnProperty('valor_recarga_bene') ? 'valor_recarga_bene' : 'valor';
-      clone[originalIndex] = { ...clone[originalIndex], [valorKey]: v }
-      setLote(prev => ({ ...prev, rows: clone }))
-    } else {
-      console.error("Linha original não encontrada para edição.");
-    }
-    setEditingIndex(null)
-    setEditValue('')
-  }
-
-  const cancelarEdicao = () => {
-    setEditingIndex(null)
-    setEditValue('')
-  }
-
-  const limparLote = () => {
-    setLote({ id: null, arquivo: null, tipo: null, rows: [], excluidosPorColab: new Set() })
-    setFormEnvio({
-      periodoInicio: '',
-      periodoFim: '',
-      competenciaMes: '',
-      competenciaAno: String(new Date().getFullYear()),
-      vencimento: ''
-    })
-    setModalOpen(false)
-    setEditingIndex(null)
-    setEditValue('')
-    setData(null)
-  }
-
-  const abrirModalEnvio = () => setModalOpen(true)
-
-  const confirmarEnvio = async (e) => { 
-    e.preventDefault()
-  
-    // 1. Validação inicial
-    if (!data || !data.data_to_backend) {
-      console.error("Dados de envio (data.data_to_backend) não estão disponíveis.");
-      return;
-    }
-
-    // 2. Clonar dados para manipulação
-    const dataParaEnvio = JSON.parse(JSON.stringify(data)); 
-
-    // --- 3. Identificar nomes a serem excluídos (Bloqueados pelo Usuário + Novos Funcionários) ---
-    const excluidosManualmenteSet = lote.excluidosPorColab;
-
-    // Nomes de novos funcionários (para serem removidos)
-    const listaFuncionariosNovosOriginal = dataParaEnvio.data_to_backend.novos_registros?.funcionarios || [];
-    const nomesFuncionariosNovosSet = new Set(
-      listaFuncionariosNovosOriginal.map(f => f.nome_func || f.nome).filter(name => name)
-    );
-    
-    // Total de nomes a serem excluídos das MOVIMENTACOES_DETALHADA
-    const nomesExcluirTotal = new Set([
-      ...excluidosManualmenteSet,
-      ...nomesFuncionariosNovosSet 
-    ]);
-    
-    // --- 4. Filtrar movimentacoes_detalhada ---
-    const listaOriginal = dataParaEnvio.data_to_backend.movimentacoes_detalhada || []
-    
-    const listaFiltrada = listaOriginal.filter(item => {
-      const colaboradorKey = item.nome_func || item.colaborador;
-      return colaboradorKey && !nomesExcluirTotal.has(colaboradorKey);
-    });
-
-    dataParaEnvio.data_to_backend.movimentacoes_detalhada = listaFiltrada;
-
-    // --- 5. Filtrar Novos Funcionários (Removendo do JSON de envio) ---
-    dataParaEnvio.data_to_backend.novos_registros.funcionarios = listaFuncionariosNovosOriginal.filter(f => {
-      const nomeNovo = f.nome_func || f.nome;
-      return nomeNovo && !nomesFuncionariosNovosSet.has(nomeNovo); 
-    });
-
-    // Atualiza a contagem para 0
-    if (dataParaEnvio.data_to_backend.novos_registros) {
-      dataParaEnvio.data_to_backend.novos_registros["Total de funcionários novos"] = dataParaEnvio.data_to_backend.novos_registros.funcionarios.length;
-    }
-    
-    // --- 6. Recalcular campos do Summary ---
-    let totalMovimentacoes = 0;
-    let valorTotalBeneficios = 0;
-    const funcionariosUnicos = new Set();
-
-    listaFiltrada.forEach(item => {
-      totalMovimentacoes += 1;
-      const valor = Number(item.valor_recarga_bene || item.valor_total || item.valor || 0); 
-      valorTotalBeneficios += valor;
-      funcionariosUnicos.add(item.nome_func || item.colaborador);
-    });
-
-    // Atualiza o summary
-    if (dataParaEnvio.data_to_backend.summary) {
-      dataParaEnvio.data_to_backend.summary.total_funcionarios = funcionariosUnicos.size;
-      dataParaEnvio.data_to_backend.summary.total_movimentacoes = totalMovimentacoes;
-      dataParaEnvio.data_to_backend.summary.valor_total_beneficios = valorTotalBeneficios.toFixed(2);
-    }
-    
-    // --- 7. Adicionar dados do formulário ---
-    dataParaEnvio.data_to_backend.periodo_inicio = formEnvio.periodoInicio
-    dataParaEnvio.data_to_backend.periodo_fim = formEnvio.periodoFim
-    dataParaEnvio.data_to_backend.competencia_mes = formEnvio.competenciaMes
-    dataParaEnvio.data_to_backend.competencia_ano = formEnvio.competenciaAno
-    dataParaEnvio.data_to_backend.vencimento = formEnvio.vencimento
-
-    
-    
-    // --- 8. Chamada à Service para Confirmar o Upload (Adicionado) ---
-    try {
-        const responseEnvio = await uploadService.confirmUpload(dataParaEnvio.data_to_backend);
-        console.log("Envio concluído:", responseEnvio);
-        setModalOpen(false)
-        window.location.href = "/"
-        
-    } catch (error) {
-        console.error("Erro no envio do lote:", error);
-        // Adicione aqui a lógica de erro (ex: mostrar modal de erro)
-        setModalOpen(false)
-        alert(`Erro no envio do lote.: ${error.message}`)
-        
+      return {
+        success: true,
+        message: response.detail || 'Importação concluída com sucesso.'
       }
-    
-    
-  
-  }
+    } catch (error) {
+      const errorMessage = error.message.includes('API Error')
+        ? error.message.split('API Error: ')[1]
+        : 'Erro desconhecido na comunicação com o servidor.'
 
+      console.error('Erro no processamento da importação:', error)
 
-  const totalCompras = rowsAtivas.length
-  const totalFaturamento = rowsAtivas.length
+      return {
+        success: false,
+        message: errorMessage
+      }
+    }
+  }
 
-  return (
-    <div className="importacao-container">
-      <FileUpload onUpload={handleResult} />
+  const rowsAtivas = useMemo(() => {
+    if (!lote?.rows?.length) return []
+    if (!lote.excluidosPorColab?.size) return lote.rows
 
-      {/* KPIs do histórico */}
-      <div className="importacao-totais">
-        <div className="importacao-card compra">
-          <h3>Compras de Benefícios</h3>
-          <p className="valor">{totalCompras}</p>
-        </div>
-        <div className="importacao-card faturamento">
-          <h3>Faturamento dos Benefícios</h3>
-          <p className="valor">{totalFaturamento}</p>
-        </div>
-      </div>
+    return lote.rows.filter((r) => !lote.excluidosPorColab.has(getNomeColaborador(r)))
+  }, [lote])
 
-      {/* Lote atual */}
-      {lote.id && (
-        <div className="lote-card">
-          <div className="lote-header">
-            <div>
-              <h3>Pré-validação do Lote</h3>
-              <small>Arquivo: <strong>{lote.arquivo}</strong> • Tipo: <strong>{lote.tipo}</strong></small>
-            </div>
-            <button className="btn-ghost" onClick={limparLote}>Descartar lote</button>
-          </div>
+  const linhasValidadas = useMemo(() => {
+    return rowsAtivas.map((r) => ({
+      ...r,
+      bloqueado: getValorRow(r) > 2500
+    }))
+  }, [rowsAtivas])
 
-          {/* KPIs do lote */}
-          <div className="lote-kpis">
-            <div className="kpi">
-              <span className="kpi-label">Condomínios importados</span>
-              <span className="kpi-value">{data?.summary?.total_condominios || linhasValidadas.length}</span>
-            </div>
-            <div className="kpi">
-              <span className="kpi-label">Condomínios novos</span>
-              <span className="kpi-value">{data?.summary?.novos_registros?.["Total de condomínios novos"] || 0}</span>
-            </div>
-            <div className={`kpi ${totalBloqueios > 0 ? 'kpi-alert' : ''}`}>
-              <span className="kpi-label">Registros bloqueados (&gt; R$ 2.500)</span>
-              <span className="kpi-value">{totalBloqueios}</span>
-            </div>
-          </div>
+  const totalBloqueios = useMemo(
+    () => linhasValidadas.filter((r) => r.bloqueado).length,
+    [linhasValidadas]
+  )
 
-          {/* Tabela */}
-          <div className="tabela-wrapper">
-            <table className="tabela-importacao">
-              <thead>
-                <tr>
-                  <th>Condomínio</th>
-                  <th>Colaborador</th>
-                  <th className="col-valor">Valor</th>
-                  <th className="col-status">Status</th>
-                  <th className="col-acoes">Ações</th>
-                </tr>
-              </thead>
-              <tbody>
-                {linhasValidadas.map((r, idx) => {
-                  const isEditing = editingIndex === idx
-                  const valorExibicao = r.valor_total || r.valor || r.valor_recarga_bene
-                  const nomeColaborador = r.nome_funcionario || r.colaborador
-                  
-                  return (
-                    <tr key={idx} className={r.bloqueado ? 'row-bloqueado' : ''}>
-                      <td>{r.condominio}</td>
-                      <td>{nomeColaborador}</td>
-                      <td className="col-valor">
-                        {!isEditing ? (
-                          <>R$ {Number(valorExibicao).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</>
-                        ) : (
-                          <div className="edit-inline">
-                            <span>R$</span>
-                            <input
-                              className="input-valor"
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={editValue}
-                              onChange={e => setEditValue(e.target.value)}
-                              autoFocus
-                            />
-                          </div>
-                        )}
-                      </td>
-                      <td className="col-status">
-                        {r.bloqueado ? <span className="tag tag-danger">Bloqueado</span> : <span className="tag tag-ok">OK</span>}
-                      </td>
-                      <td className="col-acoes">
-                        {!isEditing ? (
-                          <div className="acoes-inline">
-                            {r.bloqueado && (
-                              <>
-                                <button
-                                  className="btn-sm btn-outline btn-icon"
-                                  title="Editar valor"
-                                  onClick={() => iniciarEdicao(idx, valorExibicao)}
-                                >
-                                  <PencilLine size={16} />
-                                  <span className="btn-text">Editar</span>
-                                </button>
+  const podeEnviar = linhasValidadas.length > 0 && totalBloqueios === 0
 
-                                <button
-                                  className="btn-sm btn-outline btn-icon danger"
-                                  title={`Excluir colaborador ${nomeColaborador}`}
-                                  onClick={() => excluirColaborador(idx,r)}
-                                >
-                                  <Trash2 size={16} />
-                                  <span className="btn-text">Excluir</span>
-                                </button>
-                              </>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="edit-actions">
-                            <button
-                              className="btn-sm btn-primary btn-icon"
-                              title="Salvar"
-                              onClick={() => salvarEdicao(idx)}
-                            >
-                              <Check size={16} />
-                              <span className="btn-text">Salvar</span>
-                            </button>
-                            <button
-                              className="btn-sm btn-ghost btn-icon"
-                              title="Cancelar"
-                              onClick={cancelarEdicao}
-                            >
-                              <XIcon size={16} />
-                              <span className="btn-text">Cancelar</span>
-                            </button>
-                          </div>
-                        )}
-                    </td>
-                  </tr>
-                  )
-                })}
-              </tbody>
-            </table>
-          </div>
+  const abrirConfirmacaoExclusao = (row) => {
+    setColaboradorParaExcluir(row)
+    setConfirmDeleteOpen(true)
+  }
 
-          {/* Ações */}
-          <div className="lote-actions">
-            <button className="btn-primary" disabled={!podeEnviar} onClick={abrirModalEnvio}>
-              Enviar para importação
-            </button>
-            {!podeEnviar && <span className="hint">Resolva os bloqueios para habilitar o envio.</span>}
-          </div>
-        </div>
-      )}
+  const confirmarExclusaoColaborador = () => {
+    if (!colaboradorParaExcluir) return
 
-      {/* Modal de envio */}
-      <Modal open={modalOpen} title="Informações obrigatórias" onClose={() => setModalOpen(false)}>
-        <form onSubmit={confirmarEnvio} className="form-grid">
-          {/* Período de utilização  */}
-          <div className="form-row two-cols">
-            <label>
-              <span>Período de Utilização — Início</span>
-              <input
-                type="date"
-                value={formEnvio.periodoInicio}
-                onChange={e => setFormEnvio(prev => ({ ...prev, periodoInicio: e.target.value }))}
-                required
-              />
-            </label>
-            <label>
-              <span>Período de Utilização — Fim</span>
-              <input
-                type="date"
-                min={formEnvio.periodoInicio || undefined}
-                value={formEnvio.periodoFim}
-                onChange={e => setFormEnvio(prev => ({ ...prev, periodoFim: e.target.value }))}
-                required
-              />
-            </label>
-          </div>
+    const colaboradorKey = getNomeColaborador(colaboradorParaExcluir)
 
-          {/* Competência */}
-          <div className="form-row two-cols">
-            <label>
-              <span>Competência — Mês</span>
-              <select
-                value={formEnvio.competenciaMes}
-                onChange={e => setFormEnvio(prev => ({ ...prev, competenciaMes: e.target.value }))}
-                required
-              >
-                <option value="" disabled>Selecione o mês</option>
-                {MESES.map(m => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
-                ))}
-              </select>
-            </label>
-            
-          </div>
+    if (!colaboradorKey) {
+      console.error('Chave do colaborador não encontrada para exclusão.')
+      setConfirmDeleteOpen(false)
+      setColaboradorParaExcluir(null)
+      return
+    }
 
-          {/* Vencimento */}
-          <label>
-            <span>Vencimento</span>
-            <input
-              type="date"
-              value={formEnvio.vencimento}
-              onChange={e => setFormEnvio(prev => ({ ...prev, vencimento: e.target.value }))}
-              required
-            />
-          </label>
+    const novo = new Set(lote.excluidosPorColab)
+    novo.add(colaboradorKey)
 
-          <div className="modal-actions">
-            <button type="button" className="btn-ghost" onClick={() => setModalOpen(false)}>Cancelar</button>
-            <button type="submit" className="btn-primary">Confirmar envio</button>
-          </div>
-        </form>
-      </Modal>
-    </div>
-  )
+    setLote((prev) => ({ ...prev, excluidosPorColab: novo }))
+
+    if (editingIndex !== null) {
+      setEditingIndex(null)
+      setEditValue('')
+    }
+
+    setConfirmDeleteOpen(false)
+    setColaboradorParaExcluir(null)
+  }
+
+  const cancelarExclusaoColaborador = () => {
+    setConfirmDeleteOpen(false)
+    setColaboradorParaExcluir(null)
+  }
+
+  const iniciarEdicao = (idx, valorAtual) => {
+    setEditingIndex(idx)
+    setEditValue(String(valorAtual).replace(',', '.'))
+  }
+
+  const salvarEdicao = (idx) => {
+    const v = Number(editValue)
+
+    if (Number.isNaN(v) || v <= 0) return
+
+    const linha = linhasValidadas[idx]
+    const linhaKey = getRowKey(linha)
+
+    const originalIndex = lote.rows.findIndex((r) => getRowKey(r) === linhaKey)
+
+    if (originalIndex >= 0) {
+      const clone = [...lote.rows]
+
+      const valorKey = Object.prototype.hasOwnProperty.call(clone[originalIndex], 'valor_total')
+        ? 'valor_total'
+        : Object.prototype.hasOwnProperty.call(clone[originalIndex], 'valor_recarga_bene')
+          ? 'valor_recarga_bene'
+          : 'valor'
+
+      clone[originalIndex] = {
+        ...clone[originalIndex],
+        [valorKey]: v
+      }
+
+      setLote((prev) => ({ ...prev, rows: clone }))
+    } else {
+      console.error('Linha original não encontrada para edição.')
+    }
+
+    setEditingIndex(null)
+    setEditValue('')
+  }
+
+  const cancelarEdicao = () => {
+    setEditingIndex(null)
+    setEditValue('')
+  }
+
+  const limparLote = () => {
+    setLote({
+      id: null,
+      arquivo: null,
+      tipo: null,
+      rows: [],
+      excluidosPorColab: new Set()
+    })
+
+    setFormEnvio({
+      periodoInicio: '',
+      periodoFim: '',
+      competenciaMes: '',
+      competenciaAno: String(new Date().getFullYear()),
+      vencimento: ''
+    })
+
+    setModalOpen(false)
+    setEditingIndex(null)
+    setEditValue('')
+    setData(null)
+    setDetailsOpen(false)
+    setDetailsTitle('')
+    setDetailsBenefits([])
+    setConfirmDeleteOpen(false)
+    setColaboradorParaExcluir(null)
+    setReviewOpen(false)
+    setReviewData({
+      totalFuncionarios: 0,
+      totalMovimentacoes: 0,
+      valorTotalBeneficios: 0,
+      periodoInicio: '',
+      periodoFim: '',
+      competenciaMes: '',
+      competenciaAno: '',
+      vencimento: ''
+    })
+  }
+
+  const abrirModalEnvio = () => setModalOpen(true)
+
+  const abrirDetalhes = (row) => {
+    setDetailsTitle(getNomeColaborador(row))
+    setDetailsBenefits(row?.beneficios || [])
+    setDetailsOpen(true)
+  }
+
+  const abrirModalRevisao = (e) => {
+    e.preventDefault()
+
+    if (!data || !data.data_to_backend) {
+      console.error('Dados de envio (data.data_to_backend) não estão disponíveis.')
+      return
+    }
+
+    const excluidosManualmenteSet = lote.excluidosPorColab || new Set()
+    const listaOriginal = data.data_to_backend.movimentacoes_detalhada || []
+
+    const previewMap = new Map(
+      linhasValidadas.map((item) => {
+        const nome = getNomeColaborador(item)
+        const condominio = getCondominio(item)
+        const cpf = getCpf(item)
+        const chave = cpf
+          ? `${nome}::${condominio}::${cpf}`
+          : `${nome}::${condominio}`
+
+        return [
+          chave,
+          {
+            nome,
+            condominio,
+            cpf,
+            valor: getValorRow(item)
+          }
+        ]
+      })
+    )
+
+    const listaFiltrada = listaOriginal
+      .filter((item) => {
+        const nome = item.nome_func || item.colaborador || item.nome_funcionario || item.nome
+        return nome && !excluidosManualmenteSet.has(nome)
+      })
+      .map((item) => {
+        const nome = item.nome_func || item.colaborador || item.nome_funcionario || item.nome
+        const condominio = item.condominio || item.nome_condominio || ''
+        const cpf = String(item.cpf || item.cpf_func || item.cpf_funcionario || '').trim()
+
+        const chaveComCpf = cpf
+          ? `${nome}::${condominio}::${cpf}`
+          : `${nome}::${condominio}`
+
+        const chaveSemCpf = `${nome}::${condominio}`
+
+        const previewItem = previewMap.get(chaveComCpf) || previewMap.get(chaveSemCpf)
+
+        if (!previewItem) return item
+
+        const valorEditado = previewItem.valor
+
+        if ('valor_recarga_bene' in item) {
+          return { ...item, valor_recarga_bene: valorEditado }
+        }
+
+        if ('valor_total' in item) {
+          return { ...item, valor_total: valorEditado }
+        }
+
+        return { ...item, valor: valorEditado }
+      })
+
+    let totalMovimentacoes = 0
+    let valorTotalBeneficios = 0
+    const funcionariosUnicos = new Set()
+
+    listaFiltrada.forEach((item) => {
+      totalMovimentacoes += 1
+      const valor = Number(item.valor_recarga_bene || item.valor_total || item.valor || 0)
+      valorTotalBeneficios += valor
+      funcionariosUnicos.add(item.nome_func || item.colaborador || item.nome_funcionario || item.nome)
+    })
+
+    setReviewData({
+      totalFuncionarios: funcionariosUnicos.size,
+      totalMovimentacoes,
+      valorTotalBeneficios: Number(valorTotalBeneficios.toFixed(2)),
+      periodoInicio: formEnvio.periodoInicio,
+      periodoFim: formEnvio.periodoFim,
+      competenciaMes: formEnvio.competenciaMes,
+      competenciaAno: formEnvio.competenciaAno,
+      vencimento: formEnvio.vencimento
+    })
+
+    setModalOpen(false)
+    setReviewOpen(true)
+  }
+
+  const confirmarEnvio = async () => {
+    if (!data || !data.data_to_backend) {
+      console.error('Dados de envio (data.data_to_backend) não estão disponíveis.')
+      return
+    }
+
+    const dataParaEnvio = JSON.parse(JSON.stringify(data))
+    const excluidosManualmenteSet = lote.excluidosPorColab || new Set()
+
+    const listaOriginal = dataParaEnvio.data_to_backend.movimentacoes_detalhada || []
+    const listaNovosFuncionariosOriginal = dataParaEnvio.data_to_backend.novos_registros?.funcionarios || []
+
+    const previewMap = new Map(
+      linhasValidadas.map((item) => {
+        const nome = getNomeColaborador(item)
+        const condominio = getCondominio(item)
+        const cpf = getCpf(item)
+        const chave = cpf
+          ? `${nome}::${condominio}::${cpf}`
+          : `${nome}::${condominio}`
+
+        return [
+          chave,
+          {
+            nome,
+            condominio,
+            cpf,
+            valor: getValorRow(item)
+          }
+        ]
+      })
+    )
+
+    const listaFiltrada = listaOriginal
+      .filter((item) => {
+        const nome = item.nome_func || item.colaborador || item.nome_funcionario || item.nome
+        return nome && !excluidosManualmenteSet.has(nome)
+      })
+      .map((item) => {
+        const nome = item.nome_func || item.colaborador || item.nome_funcionario || item.nome
+        const condominio = item.condominio || item.nome_condominio || ''
+        const cpf = String(item.cpf || item.cpf_func || item.cpf_funcionario || '').trim()
+
+        const chaveComCpf = cpf
+          ? `${nome}::${condominio}::${cpf}`
+          : `${nome}::${condominio}`
+
+        const chaveSemCpf = `${nome}::${condominio}`
+
+        const previewItem = previewMap.get(chaveComCpf) || previewMap.get(chaveSemCpf)
+
+        if (!previewItem) return item
+
+        const valorEditado = previewItem.valor
+
+        if ('valor_recarga_bene' in item) {
+          return { ...item, valor_recarga_bene: valorEditado }
+        }
+
+        if ('valor_total' in item) {
+          return { ...item, valor_total: valorEditado }
+        }
+
+        return { ...item, valor: valorEditado }
+      })
+
+    dataParaEnvio.data_to_backend.movimentacoes_detalhada = listaFiltrada
+
+    if (dataParaEnvio.data_to_backend.novos_registros?.funcionarios) {
+      dataParaEnvio.data_to_backend.novos_registros.funcionarios =
+        listaNovosFuncionariosOriginal.filter((f) => {
+          const nome = f.nome_func || f.nome || f.nome_funcionario || f.colaborador
+          return nome && !excluidosManualmenteSet.has(nome)
+        })
+
+      dataParaEnvio.data_to_backend.novos_registros['Total de funcionários novos'] =
+        dataParaEnvio.data_to_backend.novos_registros.funcionarios.length
+    }
+
+    let totalMovimentacoes = 0
+    let valorTotalBeneficios = 0
+    const funcionariosUnicos = new Set()
+
+    listaFiltrada.forEach((item) => {
+      totalMovimentacoes += 1
+      const valor = Number(item.valor_recarga_bene || item.valor_total || item.valor || 0)
+      valorTotalBeneficios += valor
+      funcionariosUnicos.add(item.nome_func || item.colaborador || item.nome_funcionario || item.nome)
+    })
+
+    if (dataParaEnvio.data_to_backend.summary) {
+      dataParaEnvio.data_to_backend.summary.total_funcionarios = funcionariosUnicos.size
+      dataParaEnvio.data_to_backend.summary.total_movimentacoes = totalMovimentacoes
+      dataParaEnvio.data_to_backend.summary.valor_total_beneficios = Number(valorTotalBeneficios.toFixed(2))
+    }
+
+    dataParaEnvio.data_to_backend.periodo_inicio = formEnvio.periodoInicio
+    dataParaEnvio.data_to_backend.periodo_fim = formEnvio.periodoFim
+    dataParaEnvio.data_to_backend.competencia_mes = formEnvio.competenciaMes
+    dataParaEnvio.data_to_backend.competencia_ano = formEnvio.competenciaAno
+    dataParaEnvio.data_to_backend.vencimento = formEnvio.vencimento
+
+    try {
+      const responseEnvio = await uploadService.confirmUpload(dataParaEnvio.data_to_backend)
+      console.log('Envio concluído:', responseEnvio)
+      setReviewOpen(false)
+      setModalOpen(false)
+      window.location.href = '/'
+    } catch (error) {
+      console.error('Erro no envio do lote:', error)
+      setReviewOpen(false)
+      setModalOpen(false)
+      alert(`Erro no envio do lote: ${error.message}`)
+    }
+  }
+
+  const totalCompras = rowsAtivas.length
+  const totalFaturamento = rowsAtivas.length
+
+  return (
+    <div className="importacao-container">
+      <FileUpload onUpload={handleResult} />
+
+      <div className="importacao-totais">
+        <div className="importacao-card compra">
+          <h3>Compras de Benefícios</h3>
+          <p className="valor">{totalCompras}</p>
+        </div>
+
+        <div className="importacao-card faturamento">
+          <h3>Faturamento dos Benefícios</h3>
+          <p className="valor">{totalFaturamento}</p>
+        </div>
+      </div>
+
+      {lote.id && (
+        <div className="lote-card">
+          <div className="lote-header">
+            <div>
+              <h3>Pré-validação do Lote</h3>
+              <small>
+                Arquivo: <strong>{lote.arquivo}</strong> • Tipo: <strong>{lote.tipo}</strong>
+              </small>
+            </div>
+
+            <button className="btn-ghost" onClick={limparLote} type="button">
+              Descartar lote
+            </button>
+          </div>
+
+          <div className="lote-kpis">
+            <div className="kpi">
+              <span className="kpi-label">Condomínios importados</span>
+              <span className="kpi-value">
+                {data?.summary?.total_condominios || linhasValidadas.length}
+              </span>
+            </div>
+
+            <div className="kpi">
+              <span className="kpi-label">Condomínios novos</span>
+              <span className="kpi-value">
+                {data?.summary?.novos_registros?.['Total de condomínios novos'] || 0}
+              </span>
+            </div>
+
+            <div className={`kpi ${totalBloqueios > 0 ? 'kpi-alert' : ''}`}>
+              <span className="kpi-label">Registros bloqueados (&gt; R$ 2.500)</span>
+              <span className="kpi-value">{totalBloqueios}</span>
+            </div>
+          </div>
+
+          <div className="tabela-wrapper">
+            <table className="tabela-importacao">
+              <thead>
+                <tr>
+                  <th>Condomínio</th>
+                  <th>Colaborador</th>
+                  <th className="col-valor">Valor</th>
+                  <th className="col-status">Status</th>
+                  <th className="col-acoes">Ações</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {linhasValidadas.map((r, idx) => {
+                  const isEditing = editingIndex === idx
+                  const valorExibicao = getValorRow(r)
+                  const nomeColaborador = getNomeColaborador(r)
+
+                  return (
+                    <tr key={`${getRowKey(r)}-${idx}`} className={r.bloqueado ? 'row-bloqueado' : ''}>
+                      <td>{getCondominio(r)}</td>
+                      <td>{nomeColaborador}</td>
+
+                      <td className="col-valor">
+                        {!isEditing ? (
+                          <>R$ {Number(valorExibicao).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</>
+                        ) : (
+                          <div className="edit-inline">
+                            <span>R$</span>
+                            <input
+                              className="input-valor"
+                              type="number"
+                              step="0.01"
+                              min="0"
+                              value={editValue}
+                              onChange={(e) => setEditValue(e.target.value)}
+                              autoFocus
+                            />
+                          </div>
+                        )}
+                      </td>
+
+                      <td className="col-status">
+                        {r.bloqueado
+                          ? <span className="tag tag-danger">Bloqueado</span>
+                          : <span className="tag tag-ok">OK</span>}
+                      </td>
+
+                      <td className="col-acoes">
+                        {!isEditing ? (
+                          <div className="acoes-inline">
+                            <button
+                              className="btn-sm btn-outline btn-icon"
+                              title={`Detalhes de ${nomeColaborador}`}
+                              onClick={() => abrirDetalhes(r)}
+                              type="button"
+                            >
+                              <Eye size={16} />
+                              <span className="btn-text">Detalhes</span>
+                            </button>
+
+                            {r.bloqueado && (
+                              <button
+                                className="btn-sm btn-outline btn-icon"
+                                title="Editar valor"
+                                onClick={() => iniciarEdicao(idx, valorExibicao)}
+                                type="button"
+                              >
+                                <PencilLine size={16} />
+                                <span className="btn-text">Editar</span>
+                              </button>
+                            )}
+
+                            <button
+                              className="btn-sm btn-outline btn-icon danger"
+                              title={`Excluir colaborador ${nomeColaborador}`}
+                              onClick={() => abrirConfirmacaoExclusao(r)}
+                              type="button"
+                            >
+                              <Trash2 size={16} />
+                              <span className="btn-text">Excluir</span>
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="edit-actions">
+                            <button
+                              className="btn-sm btn-primary btn-icon"
+                              title="Salvar"
+                              onClick={() => salvarEdicao(idx)}
+                              type="button"
+                            >
+                              <Check size={16} />
+                              <span className="btn-text">Salvar</span>
+                            </button>
+
+                            <button
+                              className="btn-sm btn-ghost btn-icon"
+                              title="Cancelar"
+                              onClick={cancelarEdicao}
+                              type="button"
+                            >
+                              <XIcon size={16} />
+                              <span className="btn-text">Cancelar</span>
+                            </button>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="lote-actions">
+            <button className="btn-primary" disabled={!podeEnviar} onClick={abrirModalEnvio} type="button">
+              Enviar para importação
+            </button>
+
+            {!podeEnviar && (
+              <span className="hint">Resolva os bloqueios para habilitar o envio.</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      <Modal open={modalOpen} title="Informações obrigatórias" onClose={() => setModalOpen(false)}>
+        <form onSubmit={abrirModalRevisao} className="form-grid">
+          <div className="form-row two-cols">
+            <label>
+              <span>Período de Utilização — Início</span>
+              <input
+                type="date"
+                value={formEnvio.periodoInicio}
+                onChange={(e) => setFormEnvio((prev) => ({ ...prev, periodoInicio: e.target.value }))}
+                required
+              />
+            </label>
+
+            <label>
+              <span>Período de Utilização — Fim</span>
+              <input
+                type="date"
+                min={formEnvio.periodoInicio || undefined}
+                value={formEnvio.periodoFim}
+                onChange={(e) => setFormEnvio((prev) => ({ ...prev, periodoFim: e.target.value }))}
+                required
+              />
+            </label>
+          </div>
+
+          <div className="form-row two-cols">
+            <label>
+              <span>Competência — Mês</span>
+              <select
+                value={formEnvio.competenciaMes}
+                onChange={(e) => setFormEnvio((prev) => ({ ...prev, competenciaMes: e.target.value }))}
+                required
+              >
+                <option value="" disabled>Selecione o mês</option>
+                {MESES.map((m) => (
+                  <option key={m.value} value={m.value}>{m.label}</option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <label>
+            <span>Vencimento</span>
+            <input
+              type="date"
+              value={formEnvio.vencimento}
+              onChange={(e) => setFormEnvio((prev) => ({ ...prev, vencimento: e.target.value }))}
+              required
+            />
+          </label>
+
+          <div className="modal-actions">
+            <button type="button" className="btn-ghost" onClick={() => setModalOpen(false)}>
+              Cancelar
+            </button>
+
+            <button type="submit" className="btn-primary">
+              Continuar
+            </button>
+          </div>
+        </form>
+      </Modal>
+
+      <Modal
+        open={confirmDeleteOpen}
+        title="Confirmar exclusão"
+        onClose={cancelarExclusaoColaborador}
+      >
+        <div className="confirm-delete-content">
+          <p className="confirm-delete-text">
+            Tem certeza que deseja excluir o colaborador{' '}
+            <strong>{getNomeColaborador(colaboradorParaExcluir)}</strong>
+            {getCondominio(colaboradorParaExcluir)
+              ? ` do condomínio ${getCondominio(colaboradorParaExcluir)}`
+              : ''}
+            ?
+          </p>
+
+          <p className="confirm-delete-warning">
+            Essa ação remove o colaborador da pré-validação atual.
+          </p>
+
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="btn-ghost"
+              onClick={cancelarExclusaoColaborador}
+            >
+              Cancelar
+            </button>
+
+            <button
+              type="button"
+              className="btn-outline btn-danger"
+              onClick={confirmarExclusaoColaborador}
+            >
+              Confirmar exclusão
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={reviewOpen}
+        title="Confirmar envio do lote"
+        onClose={() => setReviewOpen(false)}
+      >
+        <div className="review-summary">
+          <div className="review-grid">
+            <div className="review-card">
+              <span className="review-label">Total de colaboradores</span>
+              <strong className="review-value">{reviewData.totalFuncionarios}</strong>
+            </div>
+
+            <div className="review-card">
+              <span className="review-label">Total de movimentações</span>
+              <strong className="review-value">{reviewData.totalMovimentacoes}</strong>
+            </div>
+
+            <div className="review-card review-card-highlight">
+              <span className="review-label">Valor total dos benefícios</span>
+              <strong className="review-value">
+                {formatCurrency(reviewData.valorTotalBeneficios)}
+              </strong>
+            </div>
+          </div>
+
+          <div className="review-details">
+            <div><strong>Período:</strong> {reviewData.periodoInicio} até {reviewData.periodoFim}</div>
+            <div><strong>Competência:</strong> {reviewData.competenciaMes}/{reviewData.competenciaAno}</div>
+            <div><strong>Vencimento:</strong> {reviewData.vencimento}</div>
+          </div>
+
+          <div className="modal-actions">
+            <button
+              type="button"
+              className="btn-ghost"
+              onClick={() => {
+                setReviewOpen(false)
+                setModalOpen(true)
+              }}
+            >
+              Voltar
+            </button>
+
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={confirmarEnvio}
+            >
+              Confirmar envio
+            </button>
+          </div>
+        </div>
+      </Modal>
+
+      <Modal
+        open={detailsOpen}
+        title={`Benefícios - ${detailsTitle}`}
+        onClose={() => setDetailsOpen(false)}
+      >
+        <div className="details-benefits-list">
+          {detailsBenefits.length === 0 ? (
+            <div className="details-empty-state">Nenhum benefício encontrado para este colaborador.</div>
+          ) : (
+            detailsBenefits.map((beneficio, index) => (
+              <div
+                key={`${beneficio.codigo}-${beneficio.nome}-${index}`}
+                className="details-benefit-card"
+              >
+                <div className="details-benefit-info">
+                  <strong className="details-benefit-name">{beneficio.nome}</strong>
+                  {beneficio.codigo && (
+                    <span className="details-benefit-code">
+                      Código: {beneficio.codigo}
+                    </span>
+                  )}
+                </div>
+
+                <div className="details-benefit-value">
+                  {formatCurrency(beneficio.valor)}
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </Modal>
+    </div>
+  )
 }

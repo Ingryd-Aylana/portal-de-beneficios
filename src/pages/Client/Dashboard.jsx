@@ -31,7 +31,6 @@ const Ico = ({ d }) => (
   </svg>
 )
 
-// Icons
 const IcoDollar = () => <Ico d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
 const IcoCalendar = () => <Ico d="M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z" />
 const IcoFile = () => <Ico d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zM14 2v6h6" />
@@ -51,7 +50,7 @@ export default function Dashboard() {
   const [selectedCondo, setSelectedCondo] = useState(null)
 
   useEffect(() => {
-    ;(async () => {
+    ; (async () => {
       try {
         const [movData, acordosData] = await Promise.all([
           entebenService.getMovimentacoes(),
@@ -232,11 +231,6 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
-
-              {/* se você tiver rota de detalhe do condomínio */}
-              {/* <button className="db-go-btn" onClick={() => navigate(`/condominio/${selectedCondo.id}`)}>
-                Ver detalhes →
-              </button> */}
             </div>
           )}
 
@@ -245,7 +239,6 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* KPIs */}
         <div className="db-kpi-row">
           <div className="db-kpi" style={{ '--kpi-accent': 'var(--accent3)' }} onClick={() => navigate('/faturamento')}>
             <div className="db-kpi-icon"><IcoDollar /></div>
@@ -377,9 +370,8 @@ export default function Dashboard() {
                 <div className="db-import-meta">
                   <span>{ultImp.data ? new Date(ultImp.data).toLocaleDateString('pt-BR') : '—'}</span>
                   <span
-                    className={`db-badge ${
-                      ultImp.status === 'sucesso' ? 'bg-green' : ultImp.status === 'erro' ? 'bg-red' : 'bg-blue'
-                    }`}
+                    className={`db-badge ${ultImp.status === 'sucesso' ? 'bg-green' : ultImp.status === 'erro' ? 'bg-red' : 'bg-blue'
+                      }`}
                   >
                     {ultImp.status}
                   </span>

@@ -27,7 +27,6 @@ export default function Pendentes() {
 
   const searchLower = search.trim().toLowerCase()
 
-  // aplica filtro de busca em todas as pendências
   const pendenciasFiltradas = useMemo(() => {
     if (!searchLower) return pendencias
 
@@ -50,7 +49,6 @@ export default function Pendentes() {
     })
   }, [pendencias, searchLower])
 
-  // monta as colunas com base no resultado filtrado
   const colunas = useMemo(() => ({
     cancelado: pendenciasFiltradas.filter(p => p.status === 'cancelado'),
     pendente:  pendenciasFiltradas.filter(p => p.status === 'pendente'),
@@ -126,7 +124,6 @@ export default function Pendentes() {
 
   return (
     <div className="kp-page">
-      {/* Filtro de busca no topo */}
       <div className="kp-toolbar">
         <div className="filters-row">
           <div className="filter-group">

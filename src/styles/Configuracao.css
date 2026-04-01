@@ -537,7 +537,6 @@
     color: #dc2626;
 }
 
-/* ===== Toast (Configurações) ===== */
 .cfg-toast-wrap {
     position: fixed;
     right: 20px;
@@ -579,7 +578,6 @@
     height: 18px;
 }
 
-/* ===== Toast (Configurações) ===== */
 .cfg-toast-wrap {
     position: fixed;
     right: 20px;
@@ -682,8 +680,6 @@
 .btn-danger:hover {
     background: #b91c1c;
 }
-
-/* Filtro */
 
 .cfg-filter-bar {
   margin-bottom: 16px;

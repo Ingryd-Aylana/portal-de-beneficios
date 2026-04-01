@@ -12,7 +12,6 @@ export default function EsqueciSenha() {
   function handleSubmit(e) {
     e.preventDefault()
 
-    // depois você pluga aqui o backend de recuperação
     if (!email) return
 
     setEnviado(true)
