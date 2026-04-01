@@ -612,7 +612,6 @@
     --toast-color: #2563eb;
 }
 
-/* Confirm modal message */
 .cf-confirm-msg {
     font-size: 14px;
     color: var(--sub);

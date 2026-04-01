@@ -73,7 +73,6 @@
   letter-spacing: .06em;
 }
 
-/* Body */
 .db-body {
   max-width: 1100px;
   margin: 0 auto;
@@ -282,7 +281,6 @@
   color: var(--accent);
 }
 
-/* Pendências */
 .db-pendencias-wrap {
   background: var(--surface);
   border: 1px solid var(--border);

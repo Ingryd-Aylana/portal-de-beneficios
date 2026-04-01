@@ -190,9 +190,6 @@
     }
 }
 
-/* ==========================================================================
-   Cards de Totais (KPI) — histórico
-   ========================================================================== */
 .importacao-totais {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
@@ -247,9 +244,6 @@
     color: #059669;
 }
 
-/* ==========================================================================
-   Cartão do Lote Atual (pré-validação)
-   ========================================================================== */
 .lote-card {
     background: #fff;
     border-radius: 12px;
@@ -277,7 +271,6 @@
     color: #666;
 }
 
-/* KPIs do lote */
 .lote-kpis {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -314,7 +307,6 @@
     color: #b91c1c;
 }
 
-/* Banner de bloqueios */
 .bloqueios-banner {
     border: 1px dashed #fca5a5;
     background: #fff7f7;
@@ -336,7 +328,6 @@
     gap: 8px;
 }
 
-/* Chips */
 .chip {
     border: 1px solid transparent;
     border-radius: 9999px;
@@ -357,9 +348,6 @@
     color: #334155;
 }
 
-/* ==========================================================================
-   Tabela de Pré-visualização
-   ========================================================================== */
 .tabela-wrapper {
     overflow: auto;
     border-radius: 10px;
@@ -410,8 +398,6 @@
     width: 220px;
 }
 
-/* espaço para editar + excluir */
-
 .row-bloqueado {
     background: #fff7f7;
 }
@@ -420,7 +406,6 @@
     border-bottom-color: #ffe2e2;
 }
 
-/* Tags de status */
 .tag {
     display: inline-block;
     padding: 4px 8px;
@@ -441,7 +426,6 @@
     color: #991b1b;
 }
 
-/* Edição inline (valor) */
 .edit-inline {
     display: flex;
     align-items: center;
@@ -457,12 +441,10 @@
     font-size: 14px;
     outline: none;
     color: #111;
-    /* garante contraste mesmo em temas escuros */
 }
 
 .row-bloqueado .input-valor {
     background: #fff;
-    /* evita herdar fundo rosado */
     color: #111;
 }
 
@@ -471,7 +453,6 @@
     box-shadow: 0 0 0 3px rgba(59, 130, 246, .15);
 }
 
-/* Ações (editar/salvar/cancelar/excluir) */
 .edit-actions {
     display: flex;
     gap: 6px;
@@ -483,9 +464,6 @@
     align-items: center;
 }
 
-/* ==========================================================================
-   Botões (variações)
-   ========================================================================== */
 button {
     cursor: pointer;
 }
@@ -529,7 +507,6 @@ button {
     font-size: 12px;
 }
 
-/* Botão com ícone + texto (usado em Editar/Excluir/Salvar/Cancelar) */
 .btn-icon {
     display: inline-flex;
     align-items: center;
@@ -546,9 +523,6 @@ button {
     background: #fee2e2;
 }
 
-/* ==========================================================================
-   Ações do lote
-   ========================================================================== */
 .lote-actions {
     display: flex;
     align-items: center;
@@ -561,10 +535,6 @@ button {
     font-size: 13px;
 }
 
-/* ==========================================================================
-   Tabela “genérica” (seções legado: table-card / data-table)
-   — Mantido para compatibilidade com páginas que reutilizam estes estilos
-   ========================================================================== */
 .table-card {
     background: #fff;
     border-radius: 16px;
@@ -712,9 +682,6 @@ button {
     color: #94a3b8;
 }
 
-/* ==========================================================================
-   Modal (genérico)
-   ========================================================================== */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -782,9 +749,6 @@ button {
     margin-top: 8px;
 }
 
-/* ==========================================================================
-   Responsivo
-   ========================================================================== */
 @media (max-width: 1024px) {
     .importacao-container {
         padding: 20px;
