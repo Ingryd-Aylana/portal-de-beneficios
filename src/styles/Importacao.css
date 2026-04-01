@@ -50,7 +50,7 @@
 .upload-icon-wrapper {
     width: 56px;
     height: 56px;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #667eea 0%, #051a62 100%);
     border-radius: 14px;
     display: grid;
     place-items: center;
@@ -878,4 +878,183 @@ button {
     opacity: 1;
     transform: translateY(0);
   }
+}
+
+
+.details-benefits-list {
+    display: grid;
+    gap: 10px;
+}
+
+.details-empty-state {
+    color: #4b5563;
+    font-size: 14px;
+}
+
+.details-benefit-card {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    border: 1px solid rgba(15, 23, 42, 0.08);
+    background: #f8fafc;
+}
+
+.details-benefit-info {
+    display: grid;
+    gap: 4px;
+}
+
+.details-benefit-name {
+    color: #111827;
+    font-size: 14px;
+}
+
+.details-benefit-code {
+    opacity: 0.7;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.details-benefit-value {
+    font-weight: 700;
+    color: #111827;
+    white-space: nowrap;
+}
+
+.upload-header-between {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.upload-header-main {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    min-width: 0;
+}
+
+.upload-model-button {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+@media (max-width: 768px) {
+    .upload-header-between {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .upload-model-button {
+        width: 100%;
+    }
+}
+
+.confirm-delete-content {
+    display: grid;
+    gap: 12px;
+}
+
+.confirm-delete-text {
+    margin: 0;
+    font-size: 14px;
+    color: #1f2937;
+    line-height: 1.5;
+}
+
+.confirm-delete-warning {
+    margin: 0;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.btn-danger {
+    border-color: #fecaca;
+    color: #991b1b;
+    background: #fff;
+}
+
+.btn-danger:hover {
+    background: #fef2f2;
+}
+
+.confirm-delete-content {
+    display: grid;
+    gap: 12px;
+}
+
+.confirm-delete-text {
+    margin: 0;
+    font-size: 14px;
+    color: #1f2937;
+    line-height: 1.5;
+}
+
+.confirm-delete-warning {
+    margin: 0;
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.btn-danger {
+    border-color: #fecaca;
+    color: #991b1b;
+    background: #fff;
+}
+
+.btn-danger:hover {
+    background: #fef2f2;
+}
+
+.review-summary {
+    display: grid;
+    gap: 16px;
+}
+
+.review-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.review-card {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 14px;
+    display: grid;
+    gap: 6px;
+}
+
+.review-card-highlight {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+}
+
+.review-label {
+    font-size: 13px;
+    color: #6b7280;
+}
+
+.review-value {
+    font-size: 20px;
+    color: #111827;
+}
+
+.review-details {
+    display: grid;
+    gap: 8px;
+    font-size: 14px;
+    color: #374151;
+}
+
+@media (max-width: 720px) {
+    .review-grid {
+        grid-template-columns: 1fr;
+    }
 }

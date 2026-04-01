@@ -80,6 +80,17 @@
   font-size: 1rem;
   transition: all 0.2s ease;
   background: #fff;
+  color: #0a0a0a !important;
+}
+
+.emailGroup {
+   padding: 0.75rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 1rem;
+  transition: all 0.2s ease;
+  background: #fff;
+  color: #0a0a0a !important;
 }
 
 .inputGroup input:focus {

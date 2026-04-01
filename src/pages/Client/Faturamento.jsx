@@ -71,7 +71,6 @@ const isEmFaturamento = (item) =>
   /faturamento/i.test((item.status || '').toString())
 
 export default function Faturamento() {
-  // Monta grupos por folha de pagamento (competência)
   const [groups, setGroups] = useState(() => {
     const map = new Map()
 
@@ -161,7 +160,6 @@ export default function Faturamento() {
   }
 
   const baixarTodos = async (a) => {
-    // em faturamento não gera nada
     if (isEmFaturamento(a)) return
     await gerarFaturaPDF(a)
     await gerarBoletoPDF(a)

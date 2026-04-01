@@ -8,7 +8,7 @@ const navConfig = {
     { to: '/', label: 'Início' },
     { to: '/importacao', label: 'Importação' },
     { to: '/faturamento', label: 'Faturamento' },
-    // { to: '/pendentes', label: 'Pendentes' },
+    { to: '/pendentes', label: 'Pendentes' },
     // { to: '/historico', label: 'Histórico' },
     { to: '/relatorios', label: 'Relatórios' },
     { to: '/configuracoes', label: 'Configurações' },

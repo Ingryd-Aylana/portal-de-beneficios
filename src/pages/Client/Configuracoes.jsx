@@ -17,7 +17,6 @@ async function ensureXLSX() {
   return window.XLSX
 }
 
-/** FILTRO */
 function FiltroCondominios({ value, onChange, onClear }) {
   return (
     <div className="cfg-filter-bar">
@@ -75,7 +74,6 @@ export default function ConfiguracaoCondominios() {
 
   const [confirm, setConfirm] = useState({ open: false, id: null, nome: '' })
 
-  // TOAST 
   const [toast, setToast] = useState({ open: false, message: '', type: 'success' })
   const toastTimer = useRef(null)
   const showToast = (message, type = 'success') => {
@@ -87,7 +85,6 @@ export default function ConfiguracaoCondominios() {
     )
   }
 
-  // FILTRO  
   const [busca, setBusca] = useState('')
 
   const condominiosFiltrados = useMemo(() => {
@@ -138,7 +135,6 @@ export default function ConfiguracaoCondominios() {
     setModoAtivo('form')
   }
 
-  /* MODAL EXCLUSÃO */
   const solicitarExcluir = (cond) =>
     setConfirm({ open: true, id: cond.id, nome: cond.nome })
 

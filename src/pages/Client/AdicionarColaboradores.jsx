@@ -4,7 +4,6 @@ import { ArrowLeft, Upload, UserPlus } from 'lucide-react'
 import '../styles/AdicionarColaboradores.css'
 import CadastroColaboradorModal from '../../components/CadastroColaboradorModal'
 
-// Mock básico de benefícios por condomínio (use o mesmo do histórico)
 const condominiosMock = [
   {
     id: 1,
@@ -35,7 +34,6 @@ export default function AdicionarColaboradores() {
   const navigate = useNavigate()
   const [openModal, setOpenModal] = useState(false)
 
-  // Pega os benefícios corretos do condomínio
   const condominio = useMemo(
     () => condominiosMock.find(c => c.id === Number(id)),
     [id]
@@ -47,7 +45,6 @@ export default function AdicionarColaboradores() {
     <div className="dashboard-container">
       <div className="detail-view">
 
-        {/* HEADER */}
         <div className="detail-header">
           <button className="btn-back" onClick={() => navigate(-1)}>
             <ArrowLeft size={16} />
@@ -58,10 +55,8 @@ export default function AdicionarColaboradores() {
           <p className="detail-subtitle">Condomínio ID: {id}</p>
         </div>
 
-        {/* OPÇÕES DE IMPORTAÇÃO */}
         <div className="import-options">
 
-          {/* Importação de Excel */}
           <div
             className="import-card"
             onClick={() => alert("Importar Excel ainda não implementado.")}
@@ -71,7 +66,6 @@ export default function AdicionarColaboradores() {
             <p>Carregue uma planilha XLSX/CSV com os colaboradores.</p>
           </div>
 
-          {/* Cadastro individual */}
           <div
             className="import-card"
             onClick={() => setOpenModal(true)}
@@ -83,7 +77,6 @@ export default function AdicionarColaboradores() {
 
         </div>
 
-        {/* MODAL */}
         <CadastroColaboradorModal
           open={openModal}
           onClose={() => setOpenModal(false)}

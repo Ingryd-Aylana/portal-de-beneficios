@@ -124,7 +124,6 @@ export default function ColaboradorDashboard() {
     }
   }
 
-  /* import modal */
   const openImport  = (p) => { setSelectedPedido(p); setDocs([]); setImportOpen(true) }
   const closeImport = ()  => { setImportOpen(false); setSelectedPedido(null); setDocs([]) }
 
@@ -165,7 +164,6 @@ export default function ColaboradorDashboard() {
     closeImport()
   }
 
-  /* ESC key */
   useEffect(() => {
     const fn = e => {
       if (e.key!=='Escape') return
@@ -180,7 +178,6 @@ export default function ColaboradorDashboard() {
     <div className="cf-root">
       <Toasts toasts={toasts} onClose={closeToast} />
 
-      {/* Header */}
       <div className="cf-page-header">
         <div>
           <div className="cf-page-title">Faturamento</div>
@@ -194,7 +191,6 @@ export default function ColaboradorDashboard() {
         </button>
       </div>
 
-      {/* Stats */}
       <div className="cf-stats">
         <div className="cf-stat" style={{'--stat-color':'#111827'}}>
           <div className="cf-stat-label">Total de pedidos</div>
@@ -210,7 +206,6 @@ export default function ColaboradorDashboard() {
         </div>
       </div>
 
-      {/* Filters */}
       <div className="cf-filters">
         <div className="cf-search">
           <Search size={15}/>
@@ -234,7 +229,6 @@ export default function ColaboradorDashboard() {
         </select>
       </div>
 
-      {/* Table */}
       <div className="cf-table-wrap">
         <table className="cf-table">
           <thead>
@@ -285,7 +279,6 @@ export default function ColaboradorDashboard() {
         </table>
       </div>
 
-      {/* Import modal */}
       {importOpen && selectedPedido && (
         <div className="cf-overlay" onMouseDown={e=>e.target.classList.contains('cf-overlay')&&closeImport()}>
           <div className="cf-modal" role="dialog" aria-modal="true">
@@ -317,7 +310,6 @@ export default function ColaboradorDashboard() {
                 </div>
               </div>
 
-              {/* Dropzone */}
               <div
                 className="cf-dropzone"
                 onDragOver={e=>e.preventDefault()}
@@ -339,7 +331,6 @@ export default function ColaboradorDashboard() {
                 />
               </div>
 
-              {/* Files */}
               <div>
                 {docs.length===0
                   ? <div className="cf-files-empty">Nenhum documento selecionado ainda.</div>
