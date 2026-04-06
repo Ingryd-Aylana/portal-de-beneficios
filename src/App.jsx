@@ -7,6 +7,7 @@ import Header from './components/Header.jsx'
 import Dashboard from './pages/Client/Dashboard.jsx'
 import Importacao from './pages/Client/Importacao.jsx'
 import Faturamento from './pages/Client/Faturamento.jsx'
+import FaturamentoFormulario from './pages/Client/FaturamentoFormulario.jsx'
 import Pendentes from './pages/Comuns/Pendentes.jsx'
 import Historico from './pages/Comuns/Historico.jsx'
 import Login from './pages/Comuns/Login/Login.jsx'
@@ -26,12 +27,13 @@ function Layout() {
     '/': 'Início',
     '/importacao': 'Importação',
     '/faturamento': 'Faturamento',
+    '/faturamento/repetir': 'Repetir último faturamento',
+    '/faturamento/novo': 'Novo faturamento',
     '/pendentes': 'Pendências',
     '/historico': 'Histórico',
     '/configuracoes': 'Configurações',
     '/relatorios': 'Relatórios de Benefícios',
 
-    // Colaborador
     '/colaborador/dashboard': 'Dashboard Fedcorp',
     '/colaborador/importacaoDocs': 'Importação Fedcorp',
   }
@@ -51,12 +53,18 @@ function Layout() {
             <Route path="/" element={<Dashboard />} />
             <Route path="/importacao" element={<Importacao />} />
             <Route path="/faturamento" element={<Faturamento />} />
+            <Route
+              path="/faturamento/repetir"
+              element={<FaturamentoFormulario modo="repetir" />}
+            />
+            <Route
+              path="/faturamento/novo"
+              element={<FaturamentoFormulario modo="novo" />}
+            />
             <Route path="/pendentes" element={<Pendentes />} />
             <Route path="/historico" element={<Historico />} />
             <Route path="/configuracoes" element={<ConfiguracaoCondominios />} />
             <Route path="/relatorios" element={<RelatoriosBeneficios />} />
-            <Route path="/colaborador/dashboard" element={<ColaboradorDashboard />} />
-            <Route path="/colaborador/importacaoDocs" element={< ImportacaoDocs/>} />
 
             {/* COLABORADOR FEDCORP */}
             <Route
@@ -66,6 +74,10 @@ function Layout() {
                   <ColaboradorDashboard />
                 </ProtectedRoute>
               }
+            />
+            <Route
+              path="/colaborador/importacaoDocs"
+              element={<ImportacaoDocs />}
             />
 
             {/* FALLBACK */}

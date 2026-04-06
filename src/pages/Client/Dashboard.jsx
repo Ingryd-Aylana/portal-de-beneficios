@@ -295,6 +295,15 @@ export default function Dashboard() {
             </div>
             <div className="db-action-arrow"><IcoArrow /></div>
           </button>
+
+           <button className="db-action-btn" onClick={() => navigate('/faturamento/repetir')}>
+            <div className="db-action-icon"><IcoDollar /></div>
+            <div>
+              <div className="db-action-title">Repetir último faturamento</div>
+              <div className="db-action-desc">Repita a última base de faturamento.</div>
+            </div>
+            <div className="db-action-arrow"><IcoArrow /></div>
+          </button>
         </div>
 
         <div className="db-pendencias-wrap">

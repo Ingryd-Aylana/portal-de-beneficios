@@ -247,8 +247,12 @@ export default function ConfiguracaoCondominios() {
         <table className="table">
           <thead>
             <tr>
-              <th>Condomínio</th><th>CNPJ</th><th>Localização</th>
-              <th>Contato</th><th>Funcionários</th><th>Status</th>
+              <th>Condomínio</th>
+              <th>CNPJ</th>
+              
+              <th>Contato</th>
+              <th>Funcionários</th>
+              <th>Status</th>
               <th className="text-right">Ações</th>
             </tr>
           </thead>
@@ -265,10 +269,7 @@ export default function ConfiguracaoCondominios() {
                   </div>
                 </td>
                 <td className="muted">{cond.cnpj}</td>
-                <td className="muted">
-                  <div>{cond.cidade} - {cond.estado}</div>
-                  <div className="cell-sub">{cond.bairro}</div>
-                </td>
+               
                 <td className="muted">
                   <div>{cond.telefone}</div>
                   <div className="cell-sub">{cond.email}</div>
