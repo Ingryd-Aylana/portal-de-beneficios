@@ -209,6 +209,7 @@ export default function Importacao() {
   const [editingIndex, setEditingIndex] = useState(null)
   const [editValue, setEditValue] = useState('')
   const [modalOpen, setModalOpen] = useState(false)
+  const [mostrarSomenteAcima2500, setMostrarSomenteAcima2500] = useState(false)
 
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [detailsTitle, setDetailsTitle] = useState('')
@@ -266,6 +267,7 @@ export default function Importacao() {
       setConfirmDeleteOpen(false)
       setColaboradorParaExcluir(null)
       setReviewOpen(false)
+      setMostrarSomenteAcima2500(false)
       setReviewData({
         totalFuncionarios: 0,
         totalMovimentacoes: 0,
@@ -314,6 +316,14 @@ export default function Importacao() {
     [linhasValidadas]
   )
 
+  const linhasExibidas = useMemo(() => {
+    if (mostrarSomenteAcima2500) {
+      return linhasValidadas.filter((r) => r.bloqueado)
+    }
+
+    return linhasValidadas
+  }, [linhasValidadas, mostrarSomenteAcima2500])
+
   const podeEnviar = linhasValidadas.length > 0 && totalBloqueios === 0
 
   const abrirConfirmacaoExclusao = (row) => {
@@ -352,19 +362,17 @@ export default function Importacao() {
     setColaboradorParaExcluir(null)
   }
 
-  const iniciarEdicao = (idx, valorAtual) => {
-    setEditingIndex(idx)
+  const iniciarEdicao = (row, valorAtual) => {
+    setEditingIndex(getRowKey(row))
     setEditValue(String(valorAtual).replace(',', '.'))
   }
 
-  const salvarEdicao = (idx) => {
+  const salvarEdicao = (row) => {
     const v = Number(editValue)
 
     if (Number.isNaN(v) || v <= 0) return
 
-    const linha = linhasValidadas[idx]
-    const linhaKey = getRowKey(linha)
-
+    const linhaKey = getRowKey(row)
     const originalIndex = lote.rows.findIndex((r) => getRowKey(r) === linhaKey)
 
     if (originalIndex >= 0) {
@@ -422,6 +430,7 @@ export default function Importacao() {
     setConfirmDeleteOpen(false)
     setColaboradorParaExcluir(null)
     setReviewOpen(false)
+    setMostrarSomenteAcima2500(false)
     setReviewData({
       totalFuncionarios: 0,
       totalMovimentacoes: 0,
@@ -698,10 +707,28 @@ export default function Importacao() {
               </span>
             </div>
 
-            <div className={`kpi ${totalBloqueios > 0 ? 'kpi-alert' : ''}`}>
-              <span className="kpi-label">Registros bloqueados (&gt; R$ 2.500)</span>
+            <button
+              type="button"
+              className={`kpi kpi-button ${totalBloqueios > 0 ? 'kpi-alert' : ''} ${mostrarSomenteAcima2500 ? 'kpi-active' : ''}`}
+              onClick={() => {
+                if (totalBloqueios > 0) {
+                  setMostrarSomenteAcima2500((prev) => !prev)
+                }
+              }}
+              disabled={totalBloqueios === 0}
+              title={
+                totalBloqueios > 0
+                  ? (mostrarSomenteAcima2500 ? 'Mostrar todos os registros' : 'Filtrar registros bloqueados')
+                  : 'Nenhum registro bloqueado'
+              }
+            >
+              <span className="kpi-label">
+                {mostrarSomenteAcima2500
+                  ? 'Mostrando bloqueados (> R$ 2.500)'
+                  : 'Filtrar registros bloqueados (> R$ 2.500)'}
+              </span>
               <span className="kpi-value">{totalBloqueios}</span>
-            </div>
+            </button>
           </div>
 
           <div className="tabela-wrapper">
@@ -717,8 +744,8 @@ export default function Importacao() {
               </thead>
 
               <tbody>
-                {linhasValidadas.map((r, idx) => {
-                  const isEditing = editingIndex === idx
+                {linhasExibidas.map((r, idx) => {
+                  const isEditing = editingIndex === getRowKey(r)
                   const valorExibicao = getValorRow(r)
                   const nomeColaborador = getNomeColaborador(r)
 
@@ -769,7 +796,7 @@ export default function Importacao() {
                               <button
                                 className="btn-sm btn-outline btn-icon"
                                 title="Editar valor"
-                                onClick={() => iniciarEdicao(idx, valorExibicao)}
+                                onClick={() => iniciarEdicao(r, valorExibicao)}
                                 type="button"
                               >
                                 <PencilLine size={16} />
@@ -792,7 +819,7 @@ export default function Importacao() {
                             <button
                               className="btn-sm btn-primary btn-icon"
                               title="Salvar"
-                              onClick={() => salvarEdicao(idx)}
+                              onClick={() => salvarEdicao(r)}
                               type="button"
                             >
                               <Check size={16} />

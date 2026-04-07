@@ -493,12 +493,18 @@ button {
 }
 
 .btn-ghost {
-    background: transparent;
+    background: #fca5a5;
     color: #374151;
-    border: 1px solid transparent;
+    border: 1px solid #fca5a5;
     padding: 8px 10px;
     border-radius: 8px;
     font-weight: 600;
+}
+
+.btn-ghost:hover {
+    background: #f87171;
+    border-color: #f87171;
+    color: #374151;
 }
 
 .btn-sm {
@@ -1021,4 +1027,29 @@ button {
     .review-grid {
         grid-template-columns: 1fr;
     }
+}
+
+.importacao-filtros {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin: 16px 0 12px;
+    flex-wrap: wrap;
+}
+
+.filtro-ativo {
+    background: #eff6ff;
+    border-color: #bfdbfe;
+    color: #1d4ed8;
+}
+
+.filtro-ativo:hover {
+    background: #dbeafe;
+}
+
+.filtro-info {
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: 500;
 }
