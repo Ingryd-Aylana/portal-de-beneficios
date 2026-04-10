@@ -3,7 +3,6 @@ import { useNavigate } from "react-router-dom";
 import { FaEye, FaEyeSlash } from "react-icons/fa";
 
 import {useAuth} from "../../../context/AuthContext"; 
-import Carousel from "../../../components/Carousel"; 
 import logo from "../../../public/imagens/LOGO.png";
 
 import "../../../styles/Login.css"
