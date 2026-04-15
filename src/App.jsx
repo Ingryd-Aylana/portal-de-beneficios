@@ -33,6 +33,7 @@ function Layout() {
     '/historico': 'Histórico',
     '/configuracoes': 'Configurações',
     '/relatorios': 'Relatórios de Benefícios',
+
     '/colaborador/dashboard': 'Dashboard Fedcorp',
     '/colaborador/importacaoDocs': 'Importação Fedcorp',
   }
@@ -69,19 +70,14 @@ function Layout() {
             <Route
               path="/colaborador/dashboard"
               element={
-                <ProtectedRoute allowedRoles={['colaborador_fedcorp', 'dev']}>
+                <ProtectedRoute allowedRoles={['colaborador_fedcorp']}>
                   <ColaboradorDashboard />
                 </ProtectedRoute>
               }
             />
-
             <Route
               path="/colaborador/importacaoDocs"
-              element={
-                <ProtectedRoute allowedRoles={['colaborador_fedcorp', 'dev']}>
-                  <ImportacaoDocs />
-                </ProtectedRoute>
-              }
+              element={<ImportacaoDocs />}
             />
 
             {/* FALLBACK */}
