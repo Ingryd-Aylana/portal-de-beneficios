@@ -15,6 +15,7 @@ import {
 } from 'lucide-react'
 
 import '../../styles/ColaboradorDashboard.css'
+import { faturamentoService } from '../../services/faturamentoService'
 
 const pedidosAprovadosMock = [
   {
@@ -27,6 +28,8 @@ const pedidosAprovadosMock = [
     aprovadoEm: '10-12-2025',
     canceladoEm: null,
     motivoCancelamento: '',
+    documentosImportados: [],
+    importadoEm: null,
   },
   {
     id: 'FAT-2025-002',
@@ -38,6 +41,8 @@ const pedidosAprovadosMock = [
     aprovadoEm: '05-10-2025',
     canceladoEm: null,
     motivoCancelamento: '',
+    documentosImportados: [],
+    importadoEm: null,
   },
   {
     id: 'FAT-2025-003',
@@ -49,12 +54,17 @@ const pedidosAprovadosMock = [
     aprovadoEm: '10-12-2025',
     canceladoEm: null,
     motivoCancelamento: '',
+    documentosImportados: [],
+    importadoEm: null,
   },
 ]
 
 const fmtDate = (s) => {
   if (!s) return '-'
-  const [d, m, y] = s.split('-')
+
+  if (String(s).includes('/')) return s
+
+  const [d, m, y] = String(s).split('-')
   return y ? `${d}/${m}/${y}` : s
 }
 
@@ -105,6 +115,7 @@ function ConfirmModal({
   onCancel,
   confirmText = 'Confirmar',
   confirmColor = '#2563eb',
+  loading = false,
 }) {
   if (!open) return null
 
@@ -112,7 +123,7 @@ function ConfirmModal({
     <div
       className="cf-overlay"
       onMouseDown={(e) =>
-        e.target.classList.contains('cf-overlay') && onCancel()
+        e.target.classList.contains('cf-overlay') && !loading && onCancel()
       }
     >
       <div
@@ -126,7 +137,7 @@ function ConfirmModal({
             <div className="cf-modal-title">{title}</div>
           </div>
 
-          <button className="cf-modal-close" onClick={onCancel}>
+          <button className="cf-modal-close" onClick={onCancel} disabled={loading}>
             <X size={18} />
           </button>
         </div>
@@ -136,16 +147,17 @@ function ConfirmModal({
         </div>
 
         <div className="cf-modal-footer">
-          <button className="cf-btn secondary" onClick={onCancel}>
+          <button className="cf-btn secondary" onClick={onCancel} disabled={loading}>
             Cancelar
           </button>
 
           <button
             className="cf-btn primary"
             onClick={onConfirm}
+            disabled={loading}
             style={{ background: confirmColor, borderColor: confirmColor }}
           >
-            {confirmText}
+            {loading ? 'Processando...' : confirmText}
           </button>
         </div>
       </div>
@@ -156,6 +168,7 @@ function ConfirmModal({
 const statusLabel = {
   aprovado: 'Aprovado',
   em_faturamento: 'Em faturamento',
+  disponivel_para_funcionario: 'Disponível para funcionário',
   faturado: 'Faturado',
   cancelado: 'Cancelado',
 }
@@ -169,6 +182,7 @@ export default function ColaboradorDashboard() {
   const [importOpen, setImportOpen] = useState(false)
   const [selectedPedido, setSelectedPedido] = useState(null)
   const [docs, setDocs] = useState([])
+  const [uploading, setUploading] = useState(false)
   const fileRef = useRef(null)
 
   const [toasts, setToasts] = useState([])
@@ -213,6 +227,9 @@ export default function ColaboradorDashboard() {
       total: pedidos.length,
       aprovados: pedidos.filter((p) => p.status === 'aprovado').length,
       emFat: pedidos.filter((p) => p.status === 'em_faturamento').length,
+      disponiveisFuncionario: pedidos.filter(
+        (p) => p.status === 'disponivel_para_funcionario'
+      ).length,
       faturados: pedidos.filter((p) => p.status === 'faturado').length,
       cancelados: pedidos.filter((p) => p.status === 'cancelado').length,
     }),
@@ -361,6 +378,7 @@ export default function ColaboradorDashboard() {
   }
 
   function closeImport() {
+    if (uploading) return
     setImportOpen(false)
     setSelectedPedido(null)
     setDocs([])
@@ -434,15 +452,9 @@ export default function ColaboradorDashboard() {
       open: true,
       title: 'Confirmar importação',
       message:
-        'Ao importar a documentação, o faturamento será encerrado e o pedido será marcado como "Faturado". Após isso, não será possível incluir novos documentos. Deseja continuar?',
+        'Ao importar a documentação, o pedido ficará disponível para o funcionário. Deseja continuar?',
       onConfirm: async () => {
         await handleUpload()
-        setConfirmFinalize({
-          open: false,
-          title: '',
-          message: '',
-          onConfirm: null,
-        })
       },
     })
   }
@@ -458,26 +470,67 @@ export default function ColaboradorDashboard() {
       return
     }
 
-    console.log('UPLOAD (mock):', {
-      pedido: selectedPedido?.id,
-      arquivos: docs.map((d) => d.name),
-    })
+    if (!selectedPedido?.id) {
+      pushToast({
+        type: 'error',
+        title: 'Pedido inválido',
+        message: 'Não foi possível identificar o pedido selecionado.',
+        duration: 5000,
+      })
+      return
+    }
 
-    setPedidos((prev) =>
-      prev.map((item) =>
-        item.id === selectedPedido?.id
-          ? { ...item, status: 'faturado' }
-          : item
+    try {
+      setUploading(true)
+
+      const response = await faturamentoService.importarDocumentos(
+        selectedPedido.id,
+        docs
       )
-    )
 
-    pushToast({
-      type: 'success',
-      title: 'Upload concluído',
-      message: `Documentos enviados para ${selectedPedido?.id}. Pedido marcado como faturado.`,
-    })
+      setPedidos((prev) =>
+        prev.map((item) =>
+          item.id === selectedPedido.id
+            ? {
+                ...item,
+                status:
+                  response?.status || 'disponivel_para_funcionario',
+                documentosImportados:
+                  response?.documentosImportados || [],
+                importadoEm:
+                  response?.importadoEm ||
+                  new Date().toLocaleDateString('pt-BR'),
+              }
+            : item
+        )
+      )
 
-    closeImport()
+      pushToast({
+        type: 'success',
+        title: 'Upload concluído',
+        message: `Documentos enviados para ${selectedPedido.id}.`,
+      })
+
+      setConfirmFinalize({
+        open: false,
+        title: '',
+        message: '',
+        onConfirm: null,
+      })
+
+      closeImport()
+    } catch (error) {
+      pushToast({
+        type: 'error',
+        title: 'Erro ao importar',
+        message:
+          error?.message ||
+          'Não foi possível concluir a importação dos documentos.',
+        duration: 6000,
+      })
+    } finally {
+      setUploading(false)
+    }
   }
 
   function openCancelModal(pedido) {
@@ -534,7 +587,7 @@ export default function ColaboradorDashboard() {
         return
       }
 
-      if (confirmFinalize.open) {
+      if (confirmFinalize.open && !uploading) {
         setConfirmFinalize({
           open: false,
           title: '',
@@ -549,14 +602,14 @@ export default function ColaboradorDashboard() {
         return
       }
 
-      if (importOpen) {
+      if (importOpen && !uploading) {
         closeImport()
       }
     }
 
     window.addEventListener('keydown', fn)
     return () => window.removeEventListener('keydown', fn)
-  }, [importOpen, confirm.open, confirmFinalize.open, cancelOpen])
+  }, [importOpen, confirm.open, confirmFinalize.open, cancelOpen, uploading])
 
   return (
     <div className="cf-root">
@@ -585,7 +638,8 @@ export default function ColaboradorDashboard() {
           <Info size={14} /> Ajuda
         </button>
       </div>
-{/* 
+
+      {/*
       <div className="cf-stats">
         <div className="cf-stat" style={{ '--stat-color': '#111827' }}>
           <div className="cf-stat-label">Total de pedidos</div>
@@ -602,6 +656,11 @@ export default function ColaboradorDashboard() {
           <div className="cf-stat-value">{stats.emFat}</div>
         </div>
 
+        <div className="cf-stat" style={{ '--stat-color': '#7c3aed' }}>
+          <div className="cf-stat-label">Disponíveis p/ funcionário</div>
+          <div className="cf-stat-value">{stats.disponiveisFuncionario}</div>
+        </div>
+
         <div className="cf-stat" style={{ '--stat-color': '#2563eb' }}>
           <div className="cf-stat-label">Faturados</div>
           <div className="cf-stat-value">{stats.faturados}</div>
@@ -611,7 +670,8 @@ export default function ColaboradorDashboard() {
           <div className="cf-stat-label">Cancelados</div>
           <div className="cf-stat-value">{stats.cancelados}</div>
         </div>
-      </div> */}
+      </div>
+      */}
 
       <div className="cf-filters">
         <div className="cf-search">
@@ -636,6 +696,9 @@ export default function ColaboradorDashboard() {
           <option value="todos">Todos os status</option>
           <option value="aprovado">Aprovados</option>
           <option value="em_faturamento">Em faturamento</option>
+          <option value="disponivel_para_funcionario">
+            Disponíveis para funcionário
+          </option>
           <option value="faturado">Faturados</option>
           <option value="cancelado">Cancelados</option>
         </select>
@@ -671,6 +734,12 @@ export default function ColaboradorDashboard() {
                       Aprovado em {fmtDate(p.aprovadoEm)}
                     </div>
 
+                    {p.importadoEm && (
+                      <div className="cf-id-sub" style={{ marginTop: 4 }}>
+                        Importado em {fmtDate(p.importadoEm)}
+                      </div>
+                    )}
+
                     {p.status === 'cancelado' && p.motivoCancelamento && (
                       <div
                         className="cf-id-sub"
@@ -695,7 +764,8 @@ export default function ColaboradorDashboard() {
                   </td>
 
                   <td>
-                    {p.status === 'faturado' ? (
+                    {p.status === 'faturado' ||
+                    p.status === 'disponivel_para_funcionario' ? (
                       <span className={`cf-badge ${p.status}`}>
                         <span className="cf-badge-dot" />
                         {statusLabel[p.status]}
@@ -737,15 +807,24 @@ export default function ColaboradorDashboard() {
                     <button
                       className="cf-btn"
                       onClick={() => openImport(p)}
-                      disabled={p.status === 'faturado'}
+                      disabled={
+                        p.status === 'faturado' ||
+                        p.status === 'disponivel_para_funcionario'
+                      }
                       title={
                         p.status === 'faturado'
                           ? 'Pedido já faturado. Importação encerrada.'
+                          : p.status === 'disponivel_para_funcionario'
+                          ? 'Documentos já importados e disponíveis para o funcionário.'
                           : 'Importar documentos'
                       }
                     >
                       <FileSpreadsheet size={14} />
-                      {p.status === 'faturado' ? 'Encerrado' : 'Importar'}
+                      {p.status === 'disponivel_para_funcionario'
+                        ? 'Enviado'
+                        : p.status === 'faturado'
+                        ? 'Encerrado'
+                        : 'Importar'}
                     </button>
                   </td>
                 </tr>
@@ -759,7 +838,7 @@ export default function ColaboradorDashboard() {
         <div
           className="cf-overlay"
           onMouseDown={(e) =>
-            e.target.classList.contains('cf-overlay') && closeImport()
+            e.target.classList.contains('cf-overlay') && !uploading && closeImport()
           }
         >
           <div className="cf-modal" role="dialog" aria-modal="true">
@@ -771,7 +850,11 @@ export default function ColaboradorDashboard() {
                 </div>
               </div>
 
-              <button className="cf-modal-close" onClick={closeImport}>
+              <button
+                className="cf-modal-close"
+                onClick={closeImport}
+                disabled={uploading}
+              >
                 <X size={18} />
               </button>
             </div>
@@ -809,9 +892,9 @@ export default function ColaboradorDashboard() {
                 onDragOver={(e) => e.preventDefault()}
                 onDrop={(e) => {
                   e.preventDefault()
-                  handleFiles(e.dataTransfer.files)
+                  if (!uploading) handleFiles(e.dataTransfer.files)
                 }}
-                onClick={() => fileRef.current?.click()}
+                onClick={() => !uploading && fileRef.current?.click()}
               >
                 <div className="cf-dropzone-icon">
                   <Upload size={16} />
@@ -833,6 +916,7 @@ export default function ColaboradorDashboard() {
                   accept=".pdf,.xml,.png,.jpg,.jpeg"
                   className="cf-file-input"
                   onChange={(e) => handleFiles(e.target.files)}
+                  disabled={uploading}
                 />
               </div>
 
@@ -863,6 +947,7 @@ export default function ColaboradorDashboard() {
                           className="cf-file-remove"
                           onClick={() => requestRemove(i)}
                           title="Remover"
+                          disabled={uploading}
                         >
                           <Trash2 size={14} />
                         </button>
@@ -874,17 +959,21 @@ export default function ColaboradorDashboard() {
             </div>
 
             <div className="cf-modal-footer">
-              <button className="cf-btn secondary" onClick={closeImport}>
+              <button
+                className="cf-btn secondary"
+                onClick={closeImport}
+                disabled={uploading}
+              >
                 Cancelar
               </button>
 
               <button
                 className="cf-btn primary"
                 onClick={requestFinalizeImport}
-                disabled={!docs.length}
+                disabled={!docs.length || uploading}
               >
                 <Upload size={14} />
-                Enviar documentos
+                {uploading ? 'Enviando...' : 'Enviar documentos'}
               </button>
             </div>
           </div>
@@ -972,6 +1061,7 @@ export default function ColaboradorDashboard() {
         title={confirmFinalize.title}
         message={confirmFinalize.message}
         onCancel={() =>
+          !uploading &&
           setConfirmFinalize({
             open: false,
             title: '',
@@ -982,6 +1072,7 @@ export default function ColaboradorDashboard() {
         onConfirm={() => confirmFinalize.onConfirm && confirmFinalize.onConfirm()}
         confirmText="Confirmar envio"
         confirmColor="#2563eb"
+        loading={uploading}
       />
     </div>
   )

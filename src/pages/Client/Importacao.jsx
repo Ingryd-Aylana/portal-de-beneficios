@@ -12,7 +12,9 @@ function Modal({ open, title, onClose, children }) {
       <div className="modal-card">
         <div className="modal-header">
           <h3>{title}</h3>
-          <button className="btn-ghost" onClick={onClose} type="button">✕</button>
+          <button className="btn-ghost" onClick={onClose} type="button">
+            ✕
+          </button>
         </div>
         <div className="modal-body">{children}</div>
       </div>
@@ -32,7 +34,7 @@ const MESES = [
   { label: 'Setembro', value: '09' },
   { label: 'Outubro', value: '10' },
   { label: 'Novembro', value: '11' },
-  { label: 'Dezembro', value: '12' }
+  { label: 'Dezembro', value: '12' },
 ]
 
 function getNomeColaborador(row) {
@@ -60,7 +62,7 @@ function getRowKey(row) {
 function formatCurrency(value) {
   return Number(value || 0).toLocaleString('pt-BR', {
     style: 'currency',
-    currency: 'BRL'
+    currency: 'BRL',
   })
 }
 
@@ -94,20 +96,20 @@ function getNomeProduto(item) {
 function getCodigoProduto(item) {
   return String(
     item?.codigo_produto ||
-    item?.produto_codigo ||
-    item?.cod_produto ||
-    item?.codigo ||
-    ''
+      item?.produto_codigo ||
+      item?.cod_produto ||
+      item?.codigo ||
+      ''
   ).trim()
 }
 
 function getValorProduto(item) {
   return Number(
     item?.valor_recarga_bene ||
-    item?.valor_total ||
-    item?.valor ||
-    item?.valor_unitario ||
-    0
+      item?.valor_total ||
+      item?.valor ||
+      item?.valor_unitario ||
+      0
   )
 }
 
@@ -136,7 +138,7 @@ function buildBenefitsIndexes(movimentacoes = []) {
     const beneficio = {
       codigo: getCodigoProduto(item),
       nome: getNomeProduto(item),
-      valor: getValorProduto(item)
+      valor: getValorProduto(item),
     }
 
     if (!beneficio.nome) return
@@ -166,7 +168,7 @@ function buildBenefitsIndexes(movimentacoes = []) {
   return {
     byCondominioNomeCpf,
     byNomeCpf,
-    byCondominioNome
+    byCondominioNome,
   }
 }
 
@@ -190,7 +192,7 @@ function enrichRowsWithBenefits(rows = [], movimentacoes = []) {
 
     return {
       ...row,
-      beneficios
+      beneficios,
     }
   })
 }
@@ -203,7 +205,7 @@ export default function Importacao() {
     arquivo: null,
     tipo: null,
     rows: [],
-    excluidosPorColab: new Set()
+    excluidosPorColab: new Set(),
   })
 
   const [editingIndex, setEditingIndex] = useState(null)
@@ -227,7 +229,7 @@ export default function Importacao() {
     periodoFim: '',
     competenciaMes: '',
     competenciaAno: '',
-    vencimento: ''
+    vencimento: '',
   })
 
   const [formEnvio, setFormEnvio] = useState({
@@ -235,7 +237,7 @@ export default function Importacao() {
     periodoFim: '',
     competenciaMes: '',
     competenciaAno: String(new Date().getFullYear()),
-    vencimento: ''
+    vencimento: '',
   })
 
   async function handleResult({ file }) {
@@ -256,7 +258,7 @@ export default function Importacao() {
         arquivo: file.name,
         tipo,
         rows: parsed,
-        excluidosPorColab: new Set()
+        excluidosPorColab: new Set(),
       })
 
       setEditingIndex(null)
@@ -276,12 +278,12 @@ export default function Importacao() {
         periodoFim: '',
         competenciaMes: '',
         competenciaAno: '',
-        vencimento: ''
+        vencimento: '',
       })
 
       return {
         success: true,
-        message: response.detail || 'Importação concluída com sucesso.'
+        message: response.detail || 'Importação concluída com sucesso.',
       }
     } catch (error) {
       const errorMessage = error.message.includes('API Error')
@@ -292,7 +294,7 @@ export default function Importacao() {
 
       return {
         success: false,
-        message: errorMessage
+        message: errorMessage,
       }
     }
   }
@@ -307,7 +309,7 @@ export default function Importacao() {
   const linhasValidadas = useMemo(() => {
     return rowsAtivas.map((r) => ({
       ...r,
-      bloqueado: getValorRow(r) > 2500
+      bloqueado: getValorRow(r) > 2500,
     }))
   }, [rowsAtivas])
 
@@ -381,12 +383,12 @@ export default function Importacao() {
       const valorKey = Object.prototype.hasOwnProperty.call(clone[originalIndex], 'valor_total')
         ? 'valor_total'
         : Object.prototype.hasOwnProperty.call(clone[originalIndex], 'valor_recarga_bene')
-          ? 'valor_recarga_bene'
-          : 'valor'
+        ? 'valor_recarga_bene'
+        : 'valor'
 
       clone[originalIndex] = {
         ...clone[originalIndex],
-        [valorKey]: v
+        [valorKey]: v,
       }
 
       setLote((prev) => ({ ...prev, rows: clone }))
@@ -409,7 +411,7 @@ export default function Importacao() {
       arquivo: null,
       tipo: null,
       rows: [],
-      excluidosPorColab: new Set()
+      excluidosPorColab: new Set(),
     })
 
     setFormEnvio({
@@ -417,7 +419,7 @@ export default function Importacao() {
       periodoFim: '',
       competenciaMes: '',
       competenciaAno: String(new Date().getFullYear()),
-      vencimento: ''
+      vencimento: '',
     })
 
     setModalOpen(false)
@@ -439,7 +441,7 @@ export default function Importacao() {
       periodoFim: '',
       competenciaMes: '',
       competenciaAno: '',
-      vencimento: ''
+      vencimento: '',
     })
   }
 
@@ -477,8 +479,8 @@ export default function Importacao() {
             nome,
             condominio,
             cpf,
-            valor: getValorRow(item)
-          }
+            valor: getValorRow(item),
+          },
         ]
       })
     )
@@ -535,7 +537,7 @@ export default function Importacao() {
       periodoFim: formEnvio.periodoFim,
       competenciaMes: formEnvio.competenciaMes,
       competenciaAno: formEnvio.competenciaAno,
-      vencimento: formEnvio.vencimento
+      vencimento: formEnvio.vencimento,
     })
 
     setModalOpen(false)
@@ -552,7 +554,8 @@ export default function Importacao() {
     const excluidosManualmenteSet = lote.excluidosPorColab || new Set()
 
     const listaOriginal = dataParaEnvio.data_to_backend.movimentacoes_detalhada || []
-    const listaNovosFuncionariosOriginal = dataParaEnvio.data_to_backend.novos_registros?.funcionarios || []
+    const listaNovosFuncionariosOriginal =
+      dataParaEnvio.data_to_backend.novos_registros?.funcionarios || []
 
     const previewMap = new Map(
       linhasValidadas.map((item) => {
@@ -569,8 +572,8 @@ export default function Importacao() {
             nome,
             condominio,
             cpf,
-            valor: getValorRow(item)
-          }
+            valor: getValorRow(item),
+          },
         ]
       })
     )
@@ -635,7 +638,9 @@ export default function Importacao() {
     if (dataParaEnvio.data_to_backend.summary) {
       dataParaEnvio.data_to_backend.summary.total_funcionarios = funcionariosUnicos.size
       dataParaEnvio.data_to_backend.summary.total_movimentacoes = totalMovimentacoes
-      dataParaEnvio.data_to_backend.summary.valor_total_beneficios = Number(valorTotalBeneficios.toFixed(2))
+      dataParaEnvio.data_to_backend.summary.valor_total_beneficios = Number(
+        valorTotalBeneficios.toFixed(2)
+      )
     }
 
     dataParaEnvio.data_to_backend.periodo_inicio = formEnvio.periodoInicio
@@ -643,6 +648,9 @@ export default function Importacao() {
     dataParaEnvio.data_to_backend.competencia_mes = formEnvio.competenciaMes
     dataParaEnvio.data_to_backend.competencia_ano = formEnvio.competenciaAno
     dataParaEnvio.data_to_backend.vencimento = formEnvio.vencimento
+
+    dataParaEnvio.data_to_backend.tipo_processamento = lote.tipo
+    dataParaEnvio.data_to_backend.origem = 'importacao_faturamento'
 
     try {
       const responseEnvio = await uploadService.confirmUpload(dataParaEnvio.data_to_backend)
@@ -709,7 +717,9 @@ export default function Importacao() {
 
             <button
               type="button"
-              className={`kpi kpi-button ${totalBloqueios > 0 ? 'kpi-alert' : ''} ${mostrarSomenteAcima2500 ? 'kpi-active' : ''}`}
+              className={`kpi kpi-button ${totalBloqueios > 0 ? 'kpi-alert' : ''} ${
+                mostrarSomenteAcima2500 ? 'kpi-active' : ''
+              }`}
               onClick={() => {
                 if (totalBloqueios > 0) {
                   setMostrarSomenteAcima2500((prev) => !prev)
@@ -718,7 +728,9 @@ export default function Importacao() {
               disabled={totalBloqueios === 0}
               title={
                 totalBloqueios > 0
-                  ? (mostrarSomenteAcima2500 ? 'Mostrar todos os registros' : 'Filtrar registros bloqueados')
+                  ? mostrarSomenteAcima2500
+                    ? 'Mostrar todos os registros'
+                    : 'Filtrar registros bloqueados'
                   : 'Nenhum registro bloqueado'
               }
             >
@@ -750,13 +762,21 @@ export default function Importacao() {
                   const nomeColaborador = getNomeColaborador(r)
 
                   return (
-                    <tr key={`${getRowKey(r)}-${idx}`} className={r.bloqueado ? 'row-bloqueado' : ''}>
+                    <tr
+                      key={`${getRowKey(r)}-${idx}`}
+                      className={r.bloqueado ? 'row-bloqueado' : ''}
+                    >
                       <td>{getCondominio(r)}</td>
                       <td>{nomeColaborador}</td>
 
                       <td className="col-valor">
                         {!isEditing ? (
-                          <>R$ {Number(valorExibicao).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}</>
+                          <>
+                            R${' '}
+                            {Number(valorExibicao).toLocaleString('pt-BR', {
+                              minimumFractionDigits: 2,
+                            })}
+                          </>
                         ) : (
                           <div className="edit-inline">
                             <span>R$</span>
@@ -774,9 +794,11 @@ export default function Importacao() {
                       </td>
 
                       <td className="col-status">
-                        {r.bloqueado
-                          ? <span className="tag tag-danger">Bloqueado</span>
-                          : <span className="tag tag-ok">OK</span>}
+                        {r.bloqueado ? (
+                          <span className="tag tag-danger">Bloqueado</span>
+                        ) : (
+                          <span className="tag tag-ok">OK</span>
+                        )}
                       </td>
 
                       <td className="col-acoes">
@@ -846,7 +868,12 @@ export default function Importacao() {
           </div>
 
           <div className="lote-actions">
-            <button className="btn-primary" disabled={!podeEnviar} onClick={abrirModalEnvio} type="button">
+            <button
+              className="btn-primary"
+              disabled={!podeEnviar}
+              onClick={abrirModalEnvio}
+              type="button"
+            >
               Enviar para importação
             </button>
 
@@ -865,7 +892,9 @@ export default function Importacao() {
               <input
                 type="date"
                 value={formEnvio.periodoInicio}
-                onChange={(e) => setFormEnvio((prev) => ({ ...prev, periodoInicio: e.target.value }))}
+                onChange={(e) =>
+                  setFormEnvio((prev) => ({ ...prev, periodoInicio: e.target.value }))
+                }
                 required
               />
             </label>
@@ -876,7 +905,9 @@ export default function Importacao() {
                 type="date"
                 min={formEnvio.periodoInicio || undefined}
                 value={formEnvio.periodoFim}
-                onChange={(e) => setFormEnvio((prev) => ({ ...prev, periodoFim: e.target.value }))}
+                onChange={(e) =>
+                  setFormEnvio((prev) => ({ ...prev, periodoFim: e.target.value }))
+                }
                 required
               />
             </label>
@@ -887,12 +918,18 @@ export default function Importacao() {
               <span>Competência — Mês</span>
               <select
                 value={formEnvio.competenciaMes}
-                onChange={(e) => setFormEnvio((prev) => ({ ...prev, competenciaMes: e.target.value }))}
+                onChange={(e) =>
+                  setFormEnvio((prev) => ({ ...prev, competenciaMes: e.target.value }))
+                }
                 required
               >
-                <option value="" disabled>Selecione o mês</option>
+                <option value="" disabled>
+                  Selecione o mês
+                </option>
                 {MESES.map((m) => (
-                  <option key={m.value} value={m.value}>{m.label}</option>
+                  <option key={m.value} value={m.value}>
+                    {m.label}
+                  </option>
                 ))}
               </select>
             </label>
@@ -903,7 +940,9 @@ export default function Importacao() {
             <input
               type="date"
               value={formEnvio.vencimento}
-              onChange={(e) => setFormEnvio((prev) => ({ ...prev, vencimento: e.target.value }))}
+              onChange={(e) =>
+                setFormEnvio((prev) => ({ ...prev, vencimento: e.target.value }))
+              }
               required
             />
           </label>
@@ -985,9 +1024,15 @@ export default function Importacao() {
           </div>
 
           <div className="review-details">
-            <div><strong>Período:</strong> {reviewData.periodoInicio} até {reviewData.periodoFim}</div>
-            <div><strong>Competência:</strong> {reviewData.competenciaMes}/{reviewData.competenciaAno}</div>
-            <div><strong>Vencimento:</strong> {reviewData.vencimento}</div>
+            <div>
+              <strong>Período:</strong> {reviewData.periodoInicio} até {reviewData.periodoFim}
+            </div>
+            <div>
+              <strong>Competência:</strong> {reviewData.competenciaMes}/{reviewData.competenciaAno}
+            </div>
+            <div>
+              <strong>Vencimento:</strong> {reviewData.vencimento}
+            </div>
           </div>
 
           <div className="modal-actions">
@@ -1002,11 +1047,7 @@ export default function Importacao() {
               Voltar
             </button>
 
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={confirmarEnvio}
-            >
+            <button type="button" className="btn-primary" onClick={confirmarEnvio}>
               Confirmar envio
             </button>
           </div>
@@ -1020,7 +1061,9 @@ export default function Importacao() {
       >
         <div className="details-benefits-list">
           {detailsBenefits.length === 0 ? (
-            <div className="details-empty-state">Nenhum benefício encontrado para este colaborador.</div>
+            <div className="details-empty-state">
+              Nenhum benefício encontrado para este colaborador.
+            </div>
           ) : (
             detailsBenefits.map((beneficio, index) => (
               <div
@@ -1030,9 +1073,7 @@ export default function Importacao() {
                 <div className="details-benefit-info">
                   <strong className="details-benefit-name">{beneficio.nome}</strong>
                   {beneficio.codigo && (
-                    <span className="details-benefit-code">
-                      Código: {beneficio.codigo}
-                    </span>
+                    <span className="details-benefit-code">Código: {beneficio.codigo}</span>
                   )}
                 </div>
 
