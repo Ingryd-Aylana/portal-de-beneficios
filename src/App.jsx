@@ -70,7 +70,7 @@ function Layout() {
             <Route
               path="/colaborador/dashboard"
               element={
-                <ProtectedRoute allowedRoles={['colaborador_fedcorp']}>
+                <ProtectedRoute allowedRoles={['dev', 'colaborador_fedcorp']}>
                   <ColaboradorDashboard />
                 </ProtectedRoute>
               }

@@ -197,6 +197,110 @@ function enrichRowsWithBenefits(rows = [], movimentacoes = []) {
   })
 }
 
+function getQuantidadeDias(row) {
+  return Number(row?.quantidade_dias || row?.quantidade || row?.dias || 0)
+}
+
+function buildPreviewRowsFromMovimentacoes(movimentacoes = []) {
+  const mapa = new Map()
+
+  movimentacoes.forEach((item) => {
+    const nome = getNomeColaborador(item)
+    const condominio = getCondominio(item)
+    const cpf = getCpf(item)
+    const key = cpf
+      ? `${condominio}::${nome}::${cpf}`
+      : `${condominio}::${nome}`
+
+    const valor = getValorRow(item)
+    const quantidadeDias = getQuantidadeDias(item)
+
+    if (!mapa.has(key)) {
+      mapa.set(key, {
+        ...item,
+        condominio,
+        nome_funcionario: nome,
+        cpf_funcionario: cpf,
+        valor_total: 0,
+        quantidade_dias: 0,
+      })
+    }
+
+    const atual = mapa.get(key)
+
+    atual.valor_total += Number(valor || 0)
+    atual.quantidade_dias += Number(quantidadeDias || 0)
+
+    mapa.set(key, atual)
+  })
+
+  return Array.from(mapa.values())
+}
+
+function formatDateToBackend(dateValue) {
+  if (!dateValue) return ''
+
+  const value = String(dateValue).trim()
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(value)) {
+    return value
+  }
+
+  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) {
+    const [y, m, d] = value.split('-')
+    return `${d}/${m}/${y}`
+  }
+
+  if (value.includes('T')) {
+    const onlyDate = value.split('T')[0]
+    if (/^\d{4}-\d{2}-\d{2}$/.test(onlyDate)) {
+      const [y, m, d] = onlyDate.split('-')
+      return `${d}/${m}/${y}`
+    }
+  }
+
+  return ''
+}
+
+function getProdutoCodigoBackend(item) {
+  return String(
+    item?.produto_codigo ||
+      item?.codigo_produto ||
+      item?.cod_produto ||
+      item?.codigo ||
+      ''
+  ).trim()
+}
+
+function getProdutoBackend(item) {
+  return (
+    item?.produto ||
+    item?.nome_produto ||
+    item?.produto_nome ||
+    item?.beneficio ||
+    item?.beneficio_nome ||
+    item?.nome_beneficio ||
+    item?.descricao_produto ||
+    item?.descricao ||
+    ''
+  )
+}
+
+function getDepartamentoBackend(item) {
+  return (
+    item?.departamento ||
+    item?.setor ||
+    item?.area ||
+    item?.condominio ||
+    item?.nome_condominio ||
+    'GERAL'
+  )
+}
+
+function getQuantidadeBackend(item) {
+  return Number(item?.quantidade || item?.quantidade_dias || item?.dias || 0)
+}
+
 export default function Importacao() {
   const [data, setData] = useState(null)
 
@@ -243,21 +347,38 @@ export default function Importacao() {
   async function handleResult({ file }) {
     try {
       const response = await uploadService.uploadFile(file)
+      console.log('UPLOAD RESPONSE:', response)
+
       setData(response)
 
-      const id = 'IMP-' + response.file_upload_id
+      const id = 'IMP-' + (response?.file_upload_id || Date.now())
       const tipo = file.name.toLowerCase().includes('fat') ? 'faturamento' : 'compra'
 
-      const previewRows = response?.summary?.total_por_beneficiario || []
       const movimentacoes = response?.data_to_backend?.movimentacoes_detalhada || []
+      console.log('movimentacoes_detalhada:', movimentacoes)
+
+      const previewRowsBackend =
+        response?.summary?.total_por_beneficiario ||
+        response?.data_to_backend?.summary?.total_por_beneficiario ||
+        []
+
+      console.log('previewRowsBackend:', previewRowsBackend)
+
+      const previewRows =
+        Array.isArray(previewRowsBackend) && previewRowsBackend.length > 0
+          ? previewRowsBackend
+          : buildPreviewRowsFromMovimentacoes(movimentacoes)
+
+      console.log('previewRows final:', previewRows)
 
       const parsed = enrichRowsWithBenefits(previewRows, movimentacoes)
+      console.log('parsed rows:', parsed)
 
       setLote({
         id,
         arquivo: file.name,
         tipo,
-        rows: parsed,
+        rows: Array.isArray(parsed) ? parsed : [],
         excluidosPorColab: new Set(),
       })
 
@@ -283,7 +404,7 @@ export default function Importacao() {
 
       return {
         success: true,
-        message: response.detail || 'Importação concluída com sucesso.',
+        message: response?.detail || 'Importação concluída com sucesso.',
       }
     } catch (error) {
       const errorMessage = error.message.includes('API Error')
@@ -573,10 +694,22 @@ export default function Importacao() {
             condominio,
             cpf,
             valor: getValorRow(item),
+            quantidade: getQuantidadeDias(item),
           },
         ]
       })
     )
+
+    const vencimentoFormatado = formatDateToBackend(formEnvio.vencimento)
+
+    console.log('formEnvio.vencimento:', formEnvio.vencimento)
+    console.log('vencimentoFormatado:', vencimentoFormatado)
+    console.log('PRIMEIRA MOVIMENTACAO ORIGINAL:', listaOriginal?.[0])
+
+    if (!vencimentoFormatado) {
+      alert('Preencha um vencimento válido antes de confirmar o envio.')
+      return
+    }
 
     const listaFiltrada = listaOriginal
       .filter((item) => {
@@ -595,20 +728,31 @@ export default function Importacao() {
         const chaveSemCpf = `${nome}::${condominio}`
 
         const previewItem = previewMap.get(chaveComCpf) || previewMap.get(chaveSemCpf)
+        const valorEditado = previewItem?.valor
+        const quantidadeEditada = previewItem?.quantidade
 
-        if (!previewItem) return item
+        const itemNormalizado = { ...item }
 
-        const valorEditado = previewItem.valor
+        const produtoCodigo = getProdutoCodigoBackend(item)
+        const produtoNome = getProdutoBackend(item)
+        const vencimentoItem = formatDateToBackend(item?.vencimento)
 
-        if ('valor_recarga_bene' in item) {
-          return { ...item, valor_recarga_bene: valorEditado }
+        itemNormalizado.produto_codigo = produtoCodigo || 'SEM_CODIGO'
+        itemNormalizado.produto = produtoNome || 'BENEFICIO'
+        itemNormalizado.departamento = getDepartamentoBackend(item)
+        itemNormalizado.quantidade = getQuantidadeBackend(item) || quantidadeEditada || 0
+        itemNormalizado.vencimento = vencimentoItem || vencimentoFormatado
+
+        if ('valor_recarga_bene' in itemNormalizado) {
+          itemNormalizado.valor_recarga_bene =
+            valorEditado ?? itemNormalizado.valor_recarga_bene
+        } else if ('valor_total' in itemNormalizado) {
+          itemNormalizado.valor_total = valorEditado ?? itemNormalizado.valor_total
+        } else {
+          itemNormalizado.valor = valorEditado ?? itemNormalizado.valor
         }
 
-        if ('valor_total' in item) {
-          return { ...item, valor_total: valorEditado }
-        }
-
-        return { ...item, valor: valorEditado }
+        return itemNormalizado
       })
 
     dataParaEnvio.data_to_backend.movimentacoes_detalhada = listaFiltrada
@@ -647,10 +791,15 @@ export default function Importacao() {
     dataParaEnvio.data_to_backend.periodo_fim = formEnvio.periodoFim
     dataParaEnvio.data_to_backend.competencia_mes = formEnvio.competenciaMes
     dataParaEnvio.data_to_backend.competencia_ano = formEnvio.competenciaAno
-    dataParaEnvio.data_to_backend.vencimento = formEnvio.vencimento
-
+    dataParaEnvio.data_to_backend.vencimento = vencimentoFormatado
     dataParaEnvio.data_to_backend.tipo_processamento = lote.tipo
     dataParaEnvio.data_to_backend.origem = 'importacao_faturamento'
+
+    console.log('PAYLOAD FINAL ENVIO:', dataParaEnvio.data_to_backend)
+    console.log(
+      'PRIMEIRA MOVIMENTACAO FINAL:',
+      dataParaEnvio.data_to_backend.movimentacoes_detalhada?.[0]
+    )
 
     try {
       const responseEnvio = await uploadService.confirmUpload(dataParaEnvio.data_to_backend)
@@ -660,8 +809,6 @@ export default function Importacao() {
       window.location.href = '/'
     } catch (error) {
       console.error('Erro no envio do lote:', error)
-      setReviewOpen(false)
-      setModalOpen(false)
       alert(`Erro no envio do lote: ${error.message}`)
     }
   }
@@ -756,113 +903,121 @@ export default function Importacao() {
               </thead>
 
               <tbody>
-                {linhasExibidas.map((r, idx) => {
-                  const isEditing = editingIndex === getRowKey(r)
-                  const valorExibicao = getValorRow(r)
-                  const nomeColaborador = getNomeColaborador(r)
+                {linhasExibidas.length === 0 ? (
+                  <tr>
+                    <td colSpan={5} style={{ textAlign: 'center', padding: '24px' }}>
+                      Nenhum registro encontrado para pré-visualização.
+                    </td>
+                  </tr>
+                ) : (
+                  linhasExibidas.map((r, idx) => {
+                    const isEditing = editingIndex === getRowKey(r)
+                    const valorExibicao = getValorRow(r)
+                    const nomeColaborador = getNomeColaborador(r)
 
-                  return (
-                    <tr
-                      key={`${getRowKey(r)}-${idx}`}
-                      className={r.bloqueado ? 'row-bloqueado' : ''}
-                    >
-                      <td>{getCondominio(r)}</td>
-                      <td>{nomeColaborador}</td>
+                    return (
+                      <tr
+                        key={`${getRowKey(r)}-${idx}`}
+                        className={r.bloqueado ? 'row-bloqueado' : ''}
+                      >
+                        <td>{getCondominio(r)}</td>
+                        <td>{nomeColaborador}</td>
 
-                      <td className="col-valor">
-                        {!isEditing ? (
-                          <>
-                            R${' '}
-                            {Number(valorExibicao).toLocaleString('pt-BR', {
-                              minimumFractionDigits: 2,
-                            })}
-                          </>
-                        ) : (
-                          <div className="edit-inline">
-                            <span>R$</span>
-                            <input
-                              className="input-valor"
-                              type="number"
-                              step="0.01"
-                              min="0"
-                              value={editValue}
-                              onChange={(e) => setEditValue(e.target.value)}
-                              autoFocus
-                            />
-                          </div>
-                        )}
-                      </td>
+                        <td className="col-valor">
+                          {!isEditing ? (
+                            <>
+                              R${' '}
+                              {Number(valorExibicao).toLocaleString('pt-BR', {
+                                minimumFractionDigits: 2,
+                              })}
+                            </>
+                          ) : (
+                            <div className="edit-inline">
+                              <span>R$</span>
+                              <input
+                                className="input-valor"
+                                type="number"
+                                step="0.01"
+                                min="0"
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                autoFocus
+                              />
+                            </div>
+                          )}
+                        </td>
 
-                      <td className="col-status">
-                        {r.bloqueado ? (
-                          <span className="tag tag-danger">Bloqueado</span>
-                        ) : (
-                          <span className="tag tag-ok">OK</span>
-                        )}
-                      </td>
+                        <td className="col-status">
+                          {r.bloqueado ? (
+                            <span className="tag tag-danger">Bloqueado</span>
+                          ) : (
+                            <span className="tag tag-ok">OK</span>
+                          )}
+                        </td>
 
-                      <td className="col-acoes">
-                        {!isEditing ? (
-                          <div className="acoes-inline">
-                            <button
-                              className="btn-sm btn-outline btn-icon"
-                              title={`Detalhes de ${nomeColaborador}`}
-                              onClick={() => abrirDetalhes(r)}
-                              type="button"
-                            >
-                              <Eye size={16} />
-                              <span className="btn-text">Detalhes</span>
-                            </button>
-
-                            {r.bloqueado && (
+                        <td className="col-acoes">
+                          {!isEditing ? (
+                            <div className="acoes-inline">
                               <button
                                 className="btn-sm btn-outline btn-icon"
-                                title="Editar valor"
-                                onClick={() => iniciarEdicao(r, valorExibicao)}
+                                title={`Detalhes de ${nomeColaborador}`}
+                                onClick={() => abrirDetalhes(r)}
                                 type="button"
                               >
-                                <PencilLine size={16} />
-                                <span className="btn-text">Editar</span>
+                                <Eye size={16} />
+                                <span className="btn-text">Detalhes</span>
                               </button>
-                            )}
 
-                            <button
-                              className="btn-sm btn-outline btn-icon danger"
-                              title={`Excluir colaborador ${nomeColaborador}`}
-                              onClick={() => abrirConfirmacaoExclusao(r)}
-                              type="button"
-                            >
-                              <Trash2 size={16} />
-                              <span className="btn-text">Excluir</span>
-                            </button>
-                          </div>
-                        ) : (
-                          <div className="edit-actions">
-                            <button
-                              className="btn-sm btn-primary btn-icon"
-                              title="Salvar"
-                              onClick={() => salvarEdicao(r)}
-                              type="button"
-                            >
-                              <Check size={16} />
-                              <span className="btn-text">Salvar</span>
-                            </button>
+                              {r.bloqueado && (
+                                <button
+                                  className="btn-sm btn-outline btn-icon"
+                                  title="Editar valor"
+                                  onClick={() => iniciarEdicao(r, valorExibicao)}
+                                  type="button"
+                                >
+                                  <PencilLine size={16} />
+                                  <span className="btn-text">Editar</span>
+                                </button>
+                              )}
 
-                            <button
-                              className="btn-sm btn-ghost btn-icon"
-                              title="Cancelar"
-                              onClick={cancelarEdicao}
-                              type="button"
-                            >
-                              <XIcon size={16} />
-                              <span className="btn-text">Cancelar</span>
-                            </button>
-                          </div>
-                        )}
-                      </td>
-                    </tr>
-                  )
-                })}
+                              <button
+                                className="btn-sm btn-outline btn-icon danger"
+                                title={`Excluir colaborador ${nomeColaborador}`}
+                                onClick={() => abrirConfirmacaoExclusao(r)}
+                                type="button"
+                              >
+                                <Trash2 size={16} />
+                                <span className="btn-text">Excluir</span>
+                              </button>
+                            </div>
+                          ) : (
+                            <div className="edit-actions">
+                              <button
+                                className="btn-sm btn-primary btn-icon"
+                                title="Salvar"
+                                onClick={() => salvarEdicao(r)}
+                                type="button"
+                              >
+                                <Check size={16} />
+                                <span className="btn-text">Salvar</span>
+                              </button>
+
+                              <button
+                                className="btn-sm btn-ghost btn-icon"
+                                title="Cancelar"
+                                onClick={cancelarEdicao}
+                                type="button"
+                              >
+                                <XIcon size={16} />
+                                <span className="btn-text">Cancelar</span>
+                              </button>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    )
+                  })
+                )}
               </tbody>
             </table>
           </div>

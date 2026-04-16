@@ -20,4 +20,12 @@ export const faturamentoService = {
       method: 'GET',
     })
   },
+
+  async listarPedidos() {
+    return this.listarPedidosFuncionario()
+  },
+
+  async uploadDocumentos(pedidoId, arquivos = []) {
+    return this.importarDocumentos(pedidoId, arquivos)
+  },
 }
