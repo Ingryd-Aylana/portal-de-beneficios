@@ -38,19 +38,19 @@ const MESES = [
 ]
 
 function getNomeColaborador(row) {
-  return row?.nome_funcionario || row?.nome_func || row?.colaborador || row?.nome || ''
+  return row?.nome_funcionario || row?.nome_func || row?.colaborador || row?.nome || row?.funcionario || row?.nome_funcionário || ''
 }
 
 function getValorRow(row) {
-  return Number(row?.valor_total || row?.valor || row?.valor_recarga_bene || 0)
+  return Number(row?.valor_total || row?.valor || row?.valor_recarga_bene || row?.valor_beneficio || row?.valorTotal || row?.ValorTotal || 0)
 }
 
 function getCondominio(row) {
-  return row?.condominio || row?.nome_condominio || ''
+  return row?.condominio || row?.nome_condominio || row?.condominio_nome || row?.NomeCondominio || ''
 }
 
 function getCpf(row) {
-  return String(row?.cpf || row?.cpf_func || row?.cpf_funcionario || '').trim()
+  return String(row?.cpf || row?.cpf_func || row?.cpf_funcionario || row?.CPF || '').trim()
 }
 
 function getRowKey(row) {
@@ -114,15 +114,15 @@ function getValorProduto(item) {
 }
 
 function getNomeMov(item) {
-  return item?.nome_funcionario || item?.nome_func || item?.colaborador || item?.nome || ''
+  return item?.nome_funcionario || item?.nome_func || item?.colaborador || item?.nome || item?.funcionario || item?.nome_funcionário || ''
 }
 
 function getCondominioMov(item) {
-  return item?.condominio || item?.nome_condominio || ''
+  return item?.condominio || item?.nome_condominio || item?.condominio_nome || item?.NomeCondominio || ''
 }
 
 function getCpfMov(item) {
-  return String(item?.cpf || item?.cpf_func || item?.cpf_funcionario || '').trim()
+  return String(item?.cpf || item?.cpf_func || item?.cpf_funcionario || item?.CPF || '').trim()
 }
 
 function buildBenefitsIndexes(movimentacoes = []) {
@@ -198,7 +198,7 @@ function enrichRowsWithBenefits(rows = [], movimentacoes = []) {
 }
 
 function getQuantidadeDias(row) {
-  return Number(row?.quantidade_dias || row?.quantidade || row?.dias || 0)
+  return Number(row?.quantidade_dias || row?.quantidade || row?.dias || row?.dias_trabalhados || row?.quantidadeDias || 0)
 }
 
 function buildPreviewRowsFromMovimentacoes(movimentacoes = []) {
@@ -354,12 +354,15 @@ export default function Importacao() {
       const id = 'IMP-' + (response?.file_upload_id || Date.now())
       const tipo = file.name.toLowerCase().includes('fat') ? 'faturamento' : 'compra'
 
-      const movimentacoes = response?.data_to_backend?.movimentacoes_detalhada || []
+      const movimentacoes = response?.data_to_backend?.movimentacoes_detalhada || response?.movimentacoes_detalhada || response?.movimentacoes || []
       console.log('movimentacoes_detalhada:', movimentacoes)
 
       const previewRowsBackend =
         response?.summary?.total_por_beneficiario ||
         response?.data_to_backend?.summary?.total_por_beneficiario ||
+        response?.total_por_beneficiario ||
+        response?.resumo ||
+        response?.preview ||
         []
 
       console.log('previewRowsBackend:', previewRowsBackend)
@@ -367,7 +370,9 @@ export default function Importacao() {
       const previewRows =
         Array.isArray(previewRowsBackend) && previewRowsBackend.length > 0
           ? previewRowsBackend
-          : buildPreviewRowsFromMovimentacoes(movimentacoes)
+          : Array.isArray(movimentacoes) && movimentacoes.length > 0
+          ? buildPreviewRowsFromMovimentacoes(movimentacoes)
+          : []
 
       console.log('previewRows final:', previewRows)
 

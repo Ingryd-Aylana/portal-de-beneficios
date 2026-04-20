@@ -38,6 +38,7 @@ const IcoArrow = () => <Ico d="M5 12h14M12 5l7 7-7 7" />
 const IcoCheck = () => <Ico d="M20 6 9 17l-5-5" />
 const IcoImport = () => <Ico d="M4 16v1a3 3 0 0 0 3 3h10a3 3 0 0 0 3-3v-1M7 10l5 5 5-5M12 15V3" />
 const IcoList = () => <Ico d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01" />
+const IcoDownload = () => <Ico d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3" />
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -180,56 +181,82 @@ export default function Dashboard() {
 
           {selectedCondo && (
             <div className="db-condo-card">
-              <div className="db-condo-card-title">
-                {selectedCondo.nome ||
-                  selectedCondo.condominio ||
-                  selectedCondo.razao_social ||
-                  selectedCondo.fantasia ||
-                  selectedCondo.nome_condominio ||
-                  `Condomínio #${selectedCondo.id}`}
+              <div className="db-condo-card-header">
+                <div className="db-condo-card-title">
+                  {selectedCondo.nome ||
+                    selectedCondo.condominio ||
+                    selectedCondo.razao_social ||
+                    selectedCondo.fantasia ||
+                    selectedCondo.nome_condominio ||
+                    `Condomínio #${selectedCondo.id}`}
+                </div>
+                <span className={`db-condo-status db-badge ${selectedCondo.status === 'Fechado' ? 'bg-green' : 'bg-amber'}`}>
+                  {selectedCondo.status || 'Ativo'}
+                </span>
               </div>
 
-              <div className="db-condo-card-grid">
-                <div>
-                  <div className="db-condo-label">CNPJ</div>
-                  <div className="db-condo-value">
-                    {selectedCondo.cnpj ||
-                      selectedCondo.cnpj_condominio ||
-                      selectedCondo.documento ||
-                      selectedCondo.cgc ||
-                      '—'}
+              <div className="db-condo-card-body">
+                <div className="db-condo-info-grid">
+                  <div className="db-condo-info-item">
+                    <div className="db-condo-label">CNPJ</div>
+                    <div className="db-condo-value">
+                      {selectedCondo.cnpj ||
+                        selectedCondo.cnpj_condominio ||
+                        selectedCondo.documento ||
+                        selectedCondo.cgc ||
+                        '—'}
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <div className="db-condo-label">Status</div>
-                  <div className="db-condo-value">{selectedCondo.status || '—'}</div>
-                </div>
-
-                <div className="db-condo-span-2">
-                  <div className="db-condo-label">Endereço</div>
-                  <div className="db-condo-value">
-                    {selectedCondo.endereco ||
-                      selectedCondo.logradouro ||
-                      selectedCondo.endereco_completo ||
-                      '—'}
+                  <div className="db-condo-info-item">
+                    <div className="db-condo-label">Cidade/UF</div>
+                    <div className="db-condo-value">
+                      {selectedCondo.cidade || '—'}
+                      {selectedCondo.uf ? ` / ${selectedCondo.uf}` : ''}
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <div className="db-condo-label">Cidade/UF</div>
-                  <div className="db-condo-value">
-                    {selectedCondo.cidade || '—'}
-                    {selectedCondo.uf ? ` / ${selectedCondo.uf}` : ''}
+                  <div className="db-condo-info-item db-condo-span-2">
+                    <div className="db-condo-label">Endereço</div>
+                    <div className="db-condo-value">
+                      {selectedCondo.endereco ||
+                        selectedCondo.logradouro ||
+                        selectedCondo.endereco_completo ||
+                        '—'}
+                    </div>
                   </div>
-                </div>
 
-                <div>
-                  <div className="db-condo-label">Contato</div>
-                  <div className="db-condo-value">
-                    {selectedCondo.telefone || selectedCondo.contato || selectedCondo.email || '—'}
+                  <div className="db-condo-info-item">
+                    <div className="db-condo-label">Contato</div>
+                    <div className="db-condo-value">
+                      {selectedCondo.telefone || selectedCondo.contato || selectedCondo.email || '—'}
+                    </div>
                   </div>
+
+                  {selectedCondo.valor && (
+                    <div className="db-condo-info-item">
+                      <div className="db-condo-label">Valor</div>
+                      <div className="db-condo-value db-condo-value-highlight">
+                        {formatCurrency(selectedCondo.valor)}
+                      </div>
+                    </div>
+                  )}
                 </div>
+              </div>
+
+              <div className="db-condo-card-actions">
+                <button
+                  className="db-condo-action-btn"
+                  onClick={() => navigate('/faturamento')}
+                >
+                  Ver faturamento
+                </button>
+                <button
+                  className="db-condo-action-btn db-condo-action-btn-secondary"
+                  onClick={() => navigate('/pendentes')}
+                >
+                  Ver pendências
+                </button>
               </div>
             </div>
           )}
@@ -240,19 +267,19 @@ export default function Dashboard() {
         </div>
 
         <div className="db-kpi-row">
-          <div className="db-kpi" style={{ '--kpi-accent': 'var(--accent3)' }} onClick={() => navigate('/faturamento')}>
-            <div className="db-kpi-icon"><IcoDollar /></div>
-            <div className="db-kpi-eyebrow">Último Faturamento</div>
+          <div className="db-kpi" style={{ '--kpi-accent': '#16a34a' }} onClick={() => navigate('/faturamento')}>
+            <div className="db-kpi-icon" style={{ background: 'rgba(22,163,74,.1)' }}><IcoDollar /></div>
+            <div className="db-kpi-eyebrow">Faturamento Total</div>
             <div className="db-kpi-value">{formatCurrency(faturamentoTotal)}</div>
             <div className="db-kpi-sub">
               <span className="db-badge bg-green">↑ Ver detalhes</span>
             </div>
           </div>
 
-          <div className="db-kpi" style={{ '--kpi-accent': 'var(--accent2)' }} onClick={() => navigate('/pendentes')}>
-            <div className="db-kpi-icon" style={{ background: 'rgba(247,149,79,.12)' }}><IcoCalendar /></div>
+          <div className="db-kpi" style={{ '--kpi-accent': '#d97706' }} onClick={() => navigate('/pendentes')}>
+            <div className="db-kpi-icon" style={{ background: 'rgba(217,119,6,.1)' }}><IcoCalendar /></div>
             <div className="db-kpi-eyebrow">Pagamentos em aberto</div>
-            <div className="db-kpi-value">{totalAberto}</div>
+            <div className="db-kpi-value" style={{ fontSize: 28 }}>{totalAberto}</div>
             <div className="db-kpi-sub">
               {pendencias.length > 0
                 ? <span className="db-badge bg-amber">⚠ {pendencias.length} vencido{pendencias.length !== 1 ? 's' : ''} hoje</span>
@@ -261,8 +288,8 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="db-kpi" style={{ '--kpi-accent': 'var(--accent)' }} onClick={() => navigate('/importacao')}>
-            <div className="db-kpi-icon"><IcoFile /></div>
+          <div className="db-kpi" style={{ '--kpi-accent': '#2563eb' }} onClick={() => navigate('/importacao')}>
+            <div className="db-kpi-icon" style={{ background: 'rgba(37,99,235,.1)' }}><IcoFile /></div>
             <div className="db-kpi-eyebrow">Última importação</div>
             <div className="db-kpi-value" style={{ fontSize: 22 }}>
               {ultImp ? `IMP-${ultImp.id}` : '—'}
@@ -273,36 +300,39 @@ export default function Dashboard() {
                 : 'Nenhuma importação ainda'}
             </div>
           </div>
+
+          <div className="db-kpi" style={{ '--kpi-accent': '#7c3aed' }}>
+            <div className="db-kpi-icon" style={{ background: 'rgba(124,58,237,.1)' }}><IcoList /></div>
+            <div className="db-kpi-eyebrow">Total de condomínios</div>
+            <div className="db-kpi-value" style={{ fontSize: 28 }}>{acordos.length}</div>
+            <div className="db-kpi-sub">
+              <span className="db-badge bg-blue">Ativos</span>
+            </div>
+          </div>
         </div>
 
         <h1 className="db-section-label">Ações rápidas</h1>
 
-        <div className="db-actions-row">
-          <button className="db-action-btn" onClick={() => navigate('/importacao')}>
-            <div className="db-action-icon"><IcoImport /></div>
-            <div>
-              <div className="db-action-title">Importar planilha ou TXT</div>
-              <div className="db-action-desc">Envie um arquivo .xlsx, .csv ou .txt para processar</div>
+        <div className="db-actions-grid">
+          <button className="db-action-card" onClick={() => navigate('/importacao')}>
+            <div className="db-action-card-icon" style={{ '--icon-bg': 'rgba(37,99,235,.1)', '--icon-color': '#2563eb' }}>
+              <IcoImport />
             </div>
-            <div className="db-action-arrow"><IcoArrow /></div>
+            <div className="db-action-card-content">
+              <div className="db-action-card-title">Nova Importação</div>
+              <div className="db-action-card-desc">Importe arquivos .xlsx, .csv ou .txt</div>
+            </div>
           </button>
 
-          <button className="db-action-btn" onClick={() => navigate('/pendentes')}>
-            <div className="db-action-icon" style={{ background: 'rgba(247,91,91,.1)' }}><IcoList /></div>
-            <div>
-              <div className="db-action-title">Ver pagamentos pendentes</div>
-              <div className="db-action-desc">Consulte e gerencie todos os acordos em aberto</div>
-            </div>
-            <div className="db-action-arrow"><IcoArrow /></div>
-          </button>
 
-           <button className="db-action-btn" onClick={() => navigate('/faturamento/repetir')}>
-            <div className="db-action-icon"><IcoDollar /></div>
-            <div>
-              <div className="db-action-title">Repetir último faturamento</div>
-              <div className="db-action-desc">Repita a última base de faturamento.</div>
+          <button className="db-action-card" onClick={() => navigate('/faturamento/repetir')}>
+            <div className="db-action-card-icon" style={{ '--icon-bg': 'rgba(124,58,237,.1)', '--icon-color': '#7c3aed' }}>
+              <IcoFile />
             </div>
-            <div className="db-action-arrow"><IcoArrow /></div>
+            <div className="db-action-card-content">
+              <div className="db-action-card-title">Repetir Faturamento</div>
+              <div className="db-action-card-desc">Use a base anterior</div>
+            </div>
           </button>
         </div>
 
@@ -373,22 +403,64 @@ export default function Dashboard() {
           <>
             <p className="db-section-label db-divider">Última importação</p>
             <div className="db-last-import">
-              <div className="db-import-icon-wrap"><IcoFile /></div>
-              <div className="db-import-info">
-                <div className="db-import-title">{ultImp.arquivo || `IMP-${ultImp.id}`}</div>
-                <div className="db-import-meta">
-                  <span>{ultImp.data ? new Date(ultImp.data).toLocaleDateString('pt-BR') : '—'}</span>
-                  <span
-                    className={`db-badge ${ultImp.status === 'sucesso' ? 'bg-green' : ultImp.status === 'erro' ? 'bg-red' : 'bg-blue'
-                      }`}
-                  >
-                    {ultImp.status}
-                  </span>
+              <div className="db-last-import-left">
+                <div className="db-import-icon-wrap">
+                  <IcoFile />
+                </div>
+                <div className="db-import-info">
+                  <div className="db-import-title">{ultImp.arquivo || `IMP-${ultImp.id}`}</div>
+                  <div className="db-import-meta">
+                    <span>{ultImp.data ? new Date(ultImp.data).toLocaleDateString('pt-BR') : '—'}</span>
+                    <span
+                      className={`db-badge ${ultImp.status === 'sucesso' ? 'bg-green' : ultImp.status === 'erro' ? 'bg-red' : 'bg-blue'
+                        }`}
+                    >
+                      {ultImp.status}
+                    </span>
+                  </div>
                 </div>
               </div>
-              <button className="db-go-btn" onClick={() => navigate('/importacao')}>
-                Gerenciar importações →
-              </button>
+
+              <div className="db-last-import-details">
+                {ultImp.valor_total && (
+                  <div className="db-import-stat">
+                    <span className="db-import-stat-label">Valor Total</span>
+                    <span className="db-import-stat-value">{formatCurrency(ultImp.valor_total)}</span>
+                  </div>
+                )}
+                {ultImp.total_funcionarios && (
+                  <div className="db-import-stat">
+                    <span className="db-import-stat-label">Colaboradores</span>
+                    <span className="db-import-stat-value">{ultImp.total_funcionarios}</span>
+                  </div>
+                )}
+                {ultImp.total_movimentacoes && (
+                  <div className="db-import-stat">
+                    <span className="db-import-stat-label">Movimentações</span>
+                    <span className="db-import-stat-value">{ultImp.total_movimentacoes}</span>
+                  </div>
+                )}
+                {ultImp.competencia_mes && (
+                  <div className="db-import-stat">
+                    <span className="db-import-stat-label">Competência</span>
+                    <span className="db-import-stat-value">{ultImp.competencia_mes}/{ultImp.competencia_ano}</span>
+                  </div>
+                )}
+              </div>
+
+              <div className="db-last-import-actions">
+                {ultImp.excel_url && (
+                  <button
+                    className="db-import-download-btn"
+                    onClick={() => window.open(ultImp.excel_url, '_blank')}
+                  >
+                    <IcoDownload /> Baixar Excel
+                  </button>
+                )}
+                <button className="db-go-btn" onClick={() => navigate('/importacao')}>
+                  Gerenciar →
+                </button>
+              </div>
             </div>
           </>
         )}
