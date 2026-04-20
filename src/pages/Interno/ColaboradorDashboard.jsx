@@ -146,6 +146,7 @@ function ConfirmModal({
 const statusLabel = {
   aprovado: 'Aprovado',
   em_faturamento: 'Em faturamento',
+  disponivel_para_funcionario: 'Disponível para funcionário',
   faturado: 'Faturado',
   cancelado: 'Cancelado',
 }
@@ -183,6 +184,9 @@ export default function ColaboradorDashboard() {
   const [cancelError, setCancelError] = useState('')
   const [cancelPedido, setCancelPedido] = useState(null)
 
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [detailsPedido, setDetailsPedido] = useState(null)
+
   const pushToast = ({
     type = 'info',
     title = '',
@@ -216,20 +220,34 @@ export default function ColaboradorDashboard() {
 
       console.log('RAW API:', lista)
 
-      const pedidosFormatados = lista.map((p) => ({
-        id: p.id,
-        dataVencimento: p.dataVencimento || p.data_vencimento || '-',
-        mesUtilizacao: p.mesUtilizacao || p.mes_utilizacao || '-',
-        quantidadeDias: p.quantidadeDias || p.quantidade_dias || '-',
-        aprovadoEm: p.aprovadoEm || p.aprovado_em || p.processed_at || '-',
-        canceladoEm: p.canceladoEm || p.cancelado_em || null,
-        motivoCancelamento: p.motivoCancelamento || p.motivo_cancelamento || '',
-        documentosImportados:
-          p.documentosImportados || p.documentos_importados || [],
-        importadoEm: p.importadoEm || p.importado_em || p.processed_at || null,
-        excelUrl: p.excelUrl || p.excel_url || null,
-        dadosRequisicao: p.dadosRequisicao || p.dados_requisicao || null,
-      }))
+      const pedidosFormatados = lista.map((p) => {
+        const dadosReq = p.dadosRequisicao || p.dados_requisicao || {}
+        const valorTotal =
+          p.valorTotal ||
+          p.valor_total ||
+          p.valor ||
+          dadosReq.valor_total ||
+          dadosReq.valorTotal ||
+          dadosReq.valor ||
+          0
+
+        return {
+          id: p.id,
+          status: p.status || 'aprovado',
+          dataVencimento: p.dataVencimento || p.data_vencimento || '-',
+          mesUtilizacao: p.mesUtilizacao || p.mes_utilizacao || '-',
+          quantidadeDias: p.quantidadeDias || p.quantidade_dias || '-',
+          aprovadoEm: p.aprovadoEm || p.aprovado_em || p.processed_at || '-',
+          canceladoEm: p.canceladoEm || p.cancelado_em || null,
+          motivoCancelamento: p.motivoCancelamento || p.motivo_cancelamento || '',
+          documentosImportados:
+            p.documentosImportados || p.documentos_importados || [],
+          importadoEm: p.importadoEm || p.importado_em || p.processed_at || null,
+          excelUrl: p.excelUrl || p.excel_url || null,
+          dadosRequisicao: dadosReq,
+          valorTotal,
+        }
+      })
 
       console.log('FORMATADO:', pedidosFormatados)
       setPedidos(pedidosFormatados)
@@ -258,7 +276,9 @@ export default function ColaboradorDashboard() {
       total: pedidos.length,
       aprovados: pedidos.filter((p) => p.status === 'aprovado').length,
       emFat: pedidos.filter((p) => p.status === 'em_faturamento').length,
-      
+      disponiveisFuncionario: pedidos.filter(
+        (p) => p.status === 'disponivel_para_funcionario'
+      ).length,
       faturados: pedidos.filter((p) => p.status === 'faturado').length,
       cancelados: pedidos.filter((p) => p.status === 'cancelado').length,
     }),
@@ -411,6 +431,16 @@ export default function ColaboradorDashboard() {
       return
     }
 
+    if (pedido.status === 'disponivel_para_funcionario') {
+      pushToast({
+        type: 'info',
+        title: 'Documentos já enviados',
+        message: 'Este pedido já está disponível para o funcionário.',
+        duration: 5000,
+      })
+      return
+    }
+
     setSelectedPedido(pedido)
     setDocs([])
     setImportOpen(true)
@@ -532,6 +562,7 @@ export default function ColaboradorDashboard() {
           item.id === selectedPedido.id
             ? {
                 ...item,
+                status: response?.status || 'disponivel_para_funcionario',
                 documentosImportados: response?.documentosImportados || [],
                 importadoEm:
                   response?.importadoEm ||
@@ -662,55 +693,25 @@ export default function ColaboradorDashboard() {
           </div>
         </div>
 
-        <button
-          className="cf-btn"
-          onClick={() =>
-            pushToast({
-              type: 'info',
-              title: 'Dica',
-              message:
-                'Você pode alterar o status do pedido diretamente na coluna de status. Para cancelar, selecione a opção no dropdown.',
-              duration: 6500,
-            })
-          }
-        >
-          <Info size={14} /> Ajuda
-        </button>
-      </div>
-
-      {/*
-      <div className="cf-stats">
-        <div className="cf-stat" style={{ '--stat-color': '#111827' }}>
-          <div className="cf-stat-label">Total de pedidos</div>
-          <div className="cf-stat-value">{stats.total}</div>
-        </div>
-
-        <div className="cf-stat" style={{ '--stat-color': '#16a34a' }}>
-          <div className="cf-stat-label">Aprovados</div>
-          <div className="cf-stat-value">{stats.aprovados}</div>
-        </div>
-
-        <div className="cf-stat" style={{ '--stat-color': '#d97706' }}>
-          <div className="cf-stat-label">Em faturamento</div>
-          <div className="cf-stat-value">{stats.emFat}</div>
-        </div>
-
-        <div className="cf-stat" style={{ '--stat-color': '#7c3aed' }}>
-          <div className="cf-stat-label">Disponíveis p/ funcionário</div>
-          <div className="cf-stat-value">{stats.disponiveisFuncionario}</div>
-        </div>
-
-        <div className="cf-stat" style={{ '--stat-color': '#2563eb' }}>
-          <div className="cf-stat-label">Faturados</div>
-          <div className="cf-stat-value">{stats.faturados}</div>
-        </div>
-
-        <div className="cf-stat" style={{ '--stat-color': '#dc2626' }}>
-          <div className="cf-stat-label">Cancelados</div>
-          <div className="cf-stat-value">{stats.cancelados}</div>
+        <div className="cf-stats-mini">
+          <div className="cf-stat-mini">
+            <span className="cf-stat-mini-value">{stats.total}</span>
+            <span className="cf-stat-mini-label">Total</span>
+          </div>
+          <div className="cf-stat-mini" style={{ '--mini-color': '#16a34a' }}>
+            <span className="cf-stat-mini-value">{stats.aprovados}</span>
+            <span className="cf-stat-mini-label">Aprovados</span>
+          </div>
+          <div className="cf-stat-mini" style={{ '--mini-color': '#d97706' }}>
+            <span className="cf-stat-mini-value">{stats.emFat}</span>
+            <span className="cf-stat-mini-label">Em Faturamento</span>
+          </div>
+          <div className="cf-stat-mini" style={{ '--mini-color': '#2563eb' }}>
+            <span className="cf-stat-mini-value">{stats.faturados}</span>
+            <span className="cf-stat-mini-label">Faturados</span>
+          </div>
         </div>
       </div>
-      */}
 
       <div className="cf-filters">
         <div className="cf-search">
@@ -735,7 +736,9 @@ export default function ColaboradorDashboard() {
           <option value="todos">Todos os status</option>
           <option value="aprovado">Aprovados</option>
           <option value="em_faturamento">Em faturamento</option>
-          
+          <option value="disponivel_para_funcionario">
+            Disponíveis para funcionário
+          </option>
           <option value="faturado">Faturados</option>
           <option value="cancelado">Cancelados</option>
         </select>
@@ -749,7 +752,9 @@ export default function ColaboradorDashboard() {
               <th>Vencimento</th>
               <th>Mês de utilização</th>
               <th>Dias</th>
+              <th>Valor Total</th>
               <th>Status</th>
+              <th>Timeline</th>
               <th>Excel</th>
               <th>Documentos</th>
             </tr>
@@ -758,13 +763,13 @@ export default function ColaboradorDashboard() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} className="cf-empty">
+                <td colSpan={9} className="cf-empty">
                   Carregando pedidos...
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="cf-empty">
+                <td colSpan={9} className="cf-empty">
                   Nenhum pedido encontrado.
                 </td>
               </tr>
@@ -773,9 +778,7 @@ export default function ColaboradorDashboard() {
                 <tr key={p.id}>
                   <td>
                     <div className="cf-id-main">{p.id}</div>
-                    <div className="cf-id-sub">
-                      Aprovado em {fmtDate(p.aprovadoEm)}
-                    </div>
+                    
 
                     {p.importadoEm && (
                       <div className="cf-id-sub" style={{ marginTop: 4 }}>
@@ -806,13 +809,20 @@ export default function ColaboradorDashboard() {
                     {p.quantidadeDias}
                   </td>
 
+                  <td style={{ fontWeight: 600, color: '#16a34a' }}>
+                    {Number(p.valorTotal || 0).toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    })}
+                  </td>
+
                   <td>
-                    {p.status === 'faturado'  (
+                    {p.status === 'faturado' || p.status === 'disponivel_para_funcionario' ? (
                       <span className={`cf-badge ${p.status}`}>
                         <span className="cf-badge-dot" />
-                        {statusLabel[p.status]}
+                        {statusLabel[p.status] || p.status}
                       </span>
-                    )  (
+                    ) : (
                       <div className="cf-status-select">
                         <select
                           value={p.status}
@@ -822,9 +832,23 @@ export default function ColaboradorDashboard() {
                           <option value="em_faturamento">Em faturamento</option>
                           <option value="cancelado">Cancelar</option>
                         </select>
-                        <span className="cf-status-arrow">▾</span>
+                      
                       </div>
                     )}
+                  </td>
+
+                  <td>
+                    <button
+                      className="cf-btn cf-btn-sm"
+                      onClick={() => {
+                        setDetailsPedido(p)
+                        setDetailsOpen(true)
+                      }}
+                      title="Ver timeline e benefícios"
+                    >
+                      <Info size={14} />
+                      Ver
+                    </button>
                   </td>
 
                   <td>
@@ -850,7 +874,8 @@ export default function ColaboradorDashboard() {
                       className="cf-btn"
                       onClick={() => openImport(p)}
                       disabled={
-                        p.status === 'faturado' 
+                        p.status === 'faturado' ||
+                        p.status === 'disponivel_para_funcionario'
                       }
                       title={
                         p.status === 'faturado'
@@ -861,7 +886,9 @@ export default function ColaboradorDashboard() {
                       }
                     >
                       <FileSpreadsheet size={14} />
-                      { p.status === 'faturado'
+                      {p.status === 'disponivel_para_funcionario'
+                        ? 'Enviado'
+                        : p.status === 'faturado'
                         ? 'Encerrado'
                         : 'Importar'}
                     </button>
@@ -921,7 +948,7 @@ export default function ColaboradorDashboard() {
                     style={{ marginTop: 2 }}
                   >
                     <span className="cf-badge-dot" />
-                    {statusLabel[selectedPedido.status]}
+                    {statusLabel[selectedPedido.status] || selectedPedido.status}
                   </span>
                 </div>
               </div>
@@ -1113,6 +1140,140 @@ export default function ColaboradorDashboard() {
         confirmColor="#2563eb"
         loading={uploading}
       />
+
+      {detailsOpen && detailsPedido && (
+        <div
+          className="cf-overlay"
+          onMouseDown={(e) =>
+            e.target.classList.contains('cf-overlay') && setDetailsOpen(false)
+          }
+        >
+          <div className="cf-modal cf-modal-details" role="dialog" aria-modal="true">
+            <div className="cf-modal-header">
+              <div>
+                <div className="cf-modal-title">Detalhes do Pedido</div>
+                <div className="cf-modal-sub">
+                  {detailsPedido.id} · {detailsPedido.mesUtilizacao}
+                </div>
+              </div>
+
+              <button
+                className="cf-modal-close"
+                onClick={() => setDetailsOpen(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="cf-modal-body">
+              <div className="cf-details-grid">
+                <div className="cf-details-card">
+                  <div className="cf-details-label">Valor Total</div>
+                  <div className="cf-details-value cf-value-green">
+                    {Number(detailsPedido.valorTotal || 0).toLocaleString('pt-BR', {
+                      style: 'currency',
+                      currency: 'BRL',
+                    })}
+                  </div>
+                </div>
+                <div className="cf-details-card">
+                  <div className="cf-details-label">Dias Trabalhados</div>
+                  <div className="cf-details-value">{detailsPedido.quantidadeDias}</div>
+                </div>
+                <div className="cf-details-card">
+                  <div className="cf-details-label">Vencimento</div>
+                  <div className="cf-details-value">{fmtDate(detailsPedido.dataVencimento)}</div>
+                </div>
+                <div className="cf-details-card">
+                  <div className="cf-details-label">Status</div>
+                  <div className="cf-details-value">
+                    <span className={`cf-badge ${detailsPedido.status}`}>
+                      <span className="cf-badge-dot" />
+                      {statusLabel[detailsPedido.status] || detailsPedido.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="cf-timeline-section">
+                <div className="cf-timeline-title">Timeline</div>
+                <div className="cf-timeline">
+                  <div className="cf-timeline-item cf-timeline-done">
+                    <div className="cf-timeline-dot" />
+                    <div className="cf-timeline-content">
+                      <div className="cf-timeline-label">Importado</div>
+                      <div className="cf-timeline-date">
+                        {detailsPedido.importadoEm ? fmtDate(detailsPedido.importadoEm) : '-'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className={`cf-timeline-item ${['aprovado', 'em_faturamento', 'disponivel_para_funcionario', 'faturado'].includes(detailsPedido.status) ? 'cf-timeline-done' : ''}`}>
+                    <div className="cf-timeline-dot" />
+                    <div className="cf-timeline-content">
+                      <div className="cf-timeline-label">Aprovado</div>
+                      <div className="cf-timeline-date">
+                        {detailsPedido.aprovadoEm ? fmtDate(detailsPedido.aprovadoEm) : '-'}
+                      </div>
+                    </div>
+                  </div>
+                  <div className={`cf-timeline-item ${['em_faturamento', 'disponivel_para_funcionario', 'faturado'].includes(detailsPedido.status) ? 'cf-timeline-done' : ''}`}>
+                    <div className="cf-timeline-dot" />
+                    <div className="cf-timeline-content">
+                      <div className="cf-timeline-label">Em Faturamento</div>
+                      <div className="cf-timeline-date">-</div>
+                    </div>
+                  </div>
+                  <div className={`cf-timeline-item ${detailsPedido.status === 'faturado' ? 'cf-timeline-done' : ''}`}>
+                    <div className="cf-timeline-dot" />
+                    <div className="cf-timeline-content">
+                      <div className="cf-timeline-label">Faturado</div>
+                      <div className="cf-timeline-date">-</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {detailsPedido.dadosRequisicao && (
+                <div className="cf-import-info">
+                  <div className="cf-import-title">Dados da Importação</div>
+                  <div className="cf-import-grid">
+                    {detailsPedido.dadosRequisicao.periodo_inicio && (
+                      <div className="cf-import-item">
+                        <span className="cf-import-label">Período</span>
+                        <span className="cf-import-value">
+                          {detailsPedido.dadosRequisicao.periodo_inicio} até {detailsPedido.dadosRequisicao.periodo_fim}
+                        </span>
+                      </div>
+                    )}
+                    {detailsPedido.dadosRequisicao.competencia_mes && (
+                      <div className="cf-import-item">
+                        <span className="cf-import-label">Competência</span>
+                        <span className="cf-import-value">
+                          {detailsPedido.dadosRequisicao.competencia_mes}/{detailsPedido.dadosRequisicao.competencia_ano}
+                        </span>
+                      </div>
+                    )}
+                    {detailsPedido.dadosRequisicao.vencimento && (
+                      <div className="cf-import-item">
+                        <span className="cf-import-label">Vencimento</span>
+                        <span className="cf-import-value">
+                          {fmtDate(detailsPedido.dadosRequisicao.vencimento)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="cf-modal-footer">
+              <button className="cf-btn secondary" onClick={() => setDetailsOpen(false)}>
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

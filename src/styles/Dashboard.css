@@ -94,12 +94,18 @@
 
 .db-kpi-row {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 16px;
   margin-bottom: 40px;
 }
 
-@media(max-width:720px) {
+@media(max-width:1024px) {
+  .db-kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media(max-width:520px) {
   .db-kpi-row {
     grid-template-columns: 1fr;
   }
@@ -208,7 +214,79 @@
   color: #4f8ef7;
 }
 
-.db-actions-row {
+.db-actions-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  margin-bottom: 40px;
+}
+
+@media(max-width:1024px) {
+  .db-actions-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media(max-width:520px) {
+  .db-actions-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.db-action-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 20px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 14px;
+  transition: border-color .2s, transform .2s, box-shadow .2s;
+  text-align: left;
+  color: var(--text);
+  font-family: var(--font);
+}
+
+.db-action-card:hover {
+  border-color: var(--accent);
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, .1);
+}
+
+.db-action-card-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--icon-bg, rgba(79, 142, 247, .1));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.db-action-card-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke: var(--icon-color, var(--accent));
+}
+
+.db-action-card-content {
+  flex: 1;
+}
+
+.db-action-card-title {
+  font-size: 14px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.db-action-card-desc {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.db-action-btn {
   display: grid;
   grid-template-columns: repeat(2, 1fr);
   gap: 16px;
@@ -379,8 +457,82 @@
   border-radius: 14px;
   padding: 24px;
   display: flex;
-  align-items: center;
+  flex-direction: column;
   gap: 20px;
+}
+
+.db-last-import-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.db-last-import-details {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+  padding: 16px;
+  background: rgba(0, 0, 0, .02);
+  border-radius: 10px;
+}
+
+.db-import-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.db-import-stat-label {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.db-import-stat-value {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.db-last-import-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.db-import-download-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(22, 163, 74, .1);
+  border: 1px solid rgba(22, 163, 74, .25);
+  color: #16a34a;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 13px;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background .2s;
+}
+
+.db-import-download-btn:hover {
+  background: rgba(22, 163, 74, .18);
+}
+
+.db-import-download-btn svg {
+  width: 16px;
+  height: 16px;
+  stroke: #16a34a;
+}
+
+@media (max-width: 768px) {
+  .db-last-import-details {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .db-last-import-actions {
+    flex-direction: column;
+  }
 }
 
 .db-import-icon-wrap {
@@ -417,6 +569,15 @@
   gap: 12px;
   flex-wrap: wrap;
   align-items: center;
+}
+
+.db-import-extra {
+  font-size: 12px;
+  color: #16a34a;
+  font-weight: 500;
+  margin-top: 6px;
+  display: flex;
+  gap: 8px;
 }
 
 .db-go-btn {
@@ -562,19 +723,43 @@
   background: var(--surface);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 16px 16px 14px;
+  overflow: hidden;
+}
+
+.db-condo-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border);
+  background: rgba(0, 0, 0, .02);
 }
 
 .db-condo-card-title {
-  font-size: 14px;
+  font-size: 15px;
   font-weight: 700;
-  margin-bottom: 12px;
+  color: var(--text);
 }
 
-.db-condo-card-grid {
+.db-condo-status {
+  font-size: 11px;
+  padding: 4px 10px;
+}
+
+.db-condo-card-body {
+  padding: 16px 20px;
+}
+
+.db-condo-info-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 12px;
+  gap: 16px;
+}
+
+.db-condo-info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .db-condo-span-2 {
@@ -587,12 +772,55 @@
   letter-spacing: .12em;
   text-transform: uppercase;
   color: var(--muted);
-  margin-bottom: 4px;
 }
 
 .db-condo-value {
   font-size: 13px;
   color: var(--text);
+}
+
+.db-condo-value-highlight {
+  font-weight: 600;
+  color: #16a34a;
+  font-size: 15px;
+}
+
+.db-condo-card-actions {
+  display: flex;
+  gap: 12px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+  background: rgba(0, 0, 0, .02);
+}
+
+.db-condo-action-btn {
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: var(--font);
+  cursor: pointer;
+  transition: background .2s, border-color .2s;
+  background: var(--accent);
+  color: #fff;
+  border: 1px solid var(--accent);
+}
+
+.db-condo-action-btn:hover {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
+}
+
+.db-condo-action-btn-secondary {
+  background: transparent;
+  color: var(--text);
+  border: 1px solid var(--border);
+}
+
+.db-condo-action-btn-secondary:hover {
+  background: rgba(0, 0, 0, .04);
+  border-color: var(--accent);
 }
 
 @media (max-width: 720px) {
@@ -603,11 +831,16 @@
     max-width: 100%;
   }
 
-  .db-condo-card-grid {
+  .db-condo-card-grid,
+  .db-condo-info-grid {
     grid-template-columns: 1fr;
   }
 
   .db-condo-span-2 {
     grid-column: auto;
+  }
+
+  .db-condo-card-actions {
+    flex-direction: column;
   }
 }
