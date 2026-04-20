@@ -46,6 +46,12 @@ const fmtDate = (s) => {
   return value
 }
 
+const fmtMoney = (value) =>
+  Number(value || 0).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  })
+
 const norm = (s) =>
   (s || '')
     .toString()
@@ -151,6 +157,90 @@ const statusLabel = {
   cancelado: 'Cancelado',
 }
 
+const getStatusClass = (status) => {
+  if (status === 'disponivel_para_funcionario') return 'disponivel_para_funcionario'
+  if (status === 'faturado') return 'faturado'
+  if (status === 'cancelado') return 'cancelado'
+  if (status === 'em_faturamento') return 'em_faturamento'
+  return 'aprovado'
+}
+
+const extrairResumoPedido = (pedidoApi) => {
+  const dadosReq = pedidoApi?.dadosRequisicao || pedidoApi?.dados_requisicao || {}
+  const movs = Array.isArray(dadosReq.movimentacoes_detalhada)
+    ? dadosReq.movimentacoes_detalhada
+    : []
+
+  const novos = dadosReq.novos_registros || {}
+  const funcionariosNovos = Array.isArray(novos.funcionarios) ? novos.funcionarios : []
+  const condominiosNovos = Array.isArray(novos.condominios) ? novos.condominios : []
+
+  const primeiroMov = movs[0] || {}
+  const primeiroCondominio = condominiosNovos[0] || {}
+
+  const valorTotal = movs.reduce(
+    (acc, item) => acc + Number(item.valor_recarga_bene || 0),
+    0
+  )
+
+  const funcionariosUnicos = [...new Set(movs.map((m) => m.nome_func).filter(Boolean))]
+
+  const competenciaBruta =
+    primeiroMov.periodo2 ||
+    primeiroMov.periodos ||
+    dadosReq.competencia ||
+    dadosReq.vencimento ||
+    pedidoApi.processed_at
+
+  let mesUtilizacao = '-'
+  if (competenciaBruta) {
+    const data = new Date(competenciaBruta)
+    if (!Number.isNaN(data.getTime())) {
+      mesUtilizacao = data.toLocaleDateString('pt-BR', {
+        month: '2-digit',
+        year: 'numeric',
+      })
+    } else {
+      mesUtilizacao = fmtDate(competenciaBruta)
+    }
+  }
+
+  const quantidadeDias = movs.length
+    ? Math.max(...movs.map((m) => Number(m.quantidade || 0)))
+    : '-'
+
+  const dataVencimento = primeiroMov.vencimento || dadosReq.vencimento || '-'
+
+  const nomeCondominio =
+    primeiroCondominio.razao_social ||
+    primeiroMov.departamento ||
+    primeiroMov.cnpj ||
+    '-'
+
+  return {
+    id: pedidoApi.id,
+    fileId: pedidoApi.file || dadosReq.file_upload_id || null,
+    status: pedidoApi.status || 'aprovado',
+    dataVencimento,
+    mesUtilizacao,
+    quantidadeDias,
+    aprovadoEm: pedidoApi.aprovadoEm || pedidoApi.aprovado_em || pedidoApi.processed_at || '-',
+    canceladoEm: pedidoApi.canceladoEm || pedidoApi.cancelado_em || null,
+    motivoCancelamento: pedidoApi.motivoCancelamento || pedidoApi.motivo_cancelamento || '',
+    documentosImportados:
+      pedidoApi.documentosImportados || pedidoApi.documentos_importados || [],
+    importadoEm: pedidoApi.importadoEm || pedidoApi.importado_em || pedidoApi.processed_at || null,
+    excelUrl: pedidoApi.excelUrl || pedidoApi.excel_url || null,
+    dadosRequisicao: dadosReq,
+    valorTotal,
+    nomeCondominio,
+    cnpj: primeiroMov.cnpj || primeiroCondominio.cnpj || '-',
+    cidade: primeiroMov.cidade || primeiroCondominio.cidade || '-',
+    uf: primeiroMov.uf || primeiroCondominio.uf || '-',
+    totalFuncionarios: funcionariosUnicos.length || funcionariosNovos.length,
+  }
+}
+
 export default function ColaboradorDashboard() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('todos')
@@ -218,38 +308,7 @@ export default function ColaboradorDashboard() {
         ? response.pedidos
         : []
 
-      console.log('RAW API:', lista)
-
-      const pedidosFormatados = lista.map((p) => {
-        const dadosReq = p.dadosRequisicao || p.dados_requisicao || {}
-        const valorTotal =
-          p.valorTotal ||
-          p.valor_total ||
-          p.valor ||
-          dadosReq.valor_total ||
-          dadosReq.valorTotal ||
-          dadosReq.valor ||
-          0
-
-        return {
-          id: p.id,
-          status: p.status || 'aprovado',
-          dataVencimento: p.dataVencimento || p.data_vencimento || '-',
-          mesUtilizacao: p.mesUtilizacao || p.mes_utilizacao || '-',
-          quantidadeDias: p.quantidadeDias || p.quantidade_dias || '-',
-          aprovadoEm: p.aprovadoEm || p.aprovado_em || p.processed_at || '-',
-          canceladoEm: p.canceladoEm || p.cancelado_em || null,
-          motivoCancelamento: p.motivoCancelamento || p.motivo_cancelamento || '',
-          documentosImportados:
-            p.documentosImportados || p.documentos_importados || [],
-          importadoEm: p.importadoEm || p.importado_em || p.processed_at || null,
-          excelUrl: p.excelUrl || p.excel_url || null,
-          dadosRequisicao: dadosReq,
-          valorTotal,
-        }
-      })
-
-      console.log('FORMATADO:', pedidosFormatados)
+      const pedidosFormatados = lista.map(extrairResumoPedido)
       setPedidos(pedidosFormatados)
     } catch (error) {
       console.error('Erro ao carregar pedidos:', error)
@@ -289,7 +348,18 @@ export default function ColaboradorDashboard() {
     const q = norm(search)
 
     return pedidos.filter((p) => {
-      const hay = norm(`${p.id} ${p.mesUtilizacao} ${p.dataVencimento}`)
+      const hay = norm(
+        [
+          p.id,
+          p.mesUtilizacao,
+          p.dataVencimento,
+          p.nomeCondominio,
+          p.cnpj,
+          p.cidade,
+          p.uf,
+        ].join(' ')
+      )
+
       return (
         (!q || hay.includes(q)) &&
         (statusFilter === 'todos' || p.status === statusFilter)
@@ -302,8 +372,7 @@ export default function ColaboradorDashboard() {
       pushToast({
         type: 'warning',
         title: 'Pedido cancelado',
-        message:
-          'Não é possível baixar o faturamento de um pedido cancelado.',
+        message: 'Não é possível baixar o faturamento de um pedido cancelado.',
       })
       return
     }
@@ -312,8 +381,7 @@ export default function ColaboradorDashboard() {
       pushToast({
         type: 'info',
         title: 'Pedido já faturado',
-        message:
-          'Este pedido já foi concluído e não pode voltar para faturamento.',
+        message: 'Este pedido já foi concluído e não pode voltar para faturamento.',
       })
       return
     }
@@ -329,28 +397,13 @@ export default function ColaboradorDashboard() {
         )
       )
 
-      if (pedido.excelUrl) {
-        const res = await fetch(pedido.excelUrl)
-        if (!res.ok) throw new Error('Arquivo não encontrado')
-
-        const blob = await res.blob()
-        const url = URL.createObjectURL(blob)
-        const a = document.createElement('a')
-
-        a.href = url
-        a.download = `${pedido.id}.xlsx`
-
-        document.body.appendChild(a)
-        a.click()
-        a.remove()
-        URL.revokeObjectURL(url)
-      } else {
-        pushToast({
-          type: 'info',
-          title: 'Sem planilha disponível',
-          message: 'Este pedido ainda não possui arquivo Excel para download.',
-        })
-      }
+      await faturamentoService.baixarExportFaturamento(
+        {
+          id: pedido.id,
+          file_upload_id: pedido.fileId,
+        },
+        `pedido-${pedido.id}.xlsx`
+      )
 
       pushToast({
         type: 'success',
@@ -674,12 +727,17 @@ export default function ColaboradorDashboard() {
 
       if (importOpen && !uploading) {
         closeImport()
+        return
+      }
+
+      if (detailsOpen) {
+        setDetailsOpen(false)
       }
     }
 
     window.addEventListener('keydown', fn)
     return () => window.removeEventListener('keydown', fn)
-  }, [importOpen, confirm.open, confirmFinalize.open, cancelOpen, uploading])
+  }, [importOpen, confirm.open, confirmFinalize.open, cancelOpen, uploading, detailsOpen])
 
   return (
     <div className="cf-root">
@@ -694,10 +752,7 @@ export default function ColaboradorDashboard() {
         </div>
 
         <div className="cf-stats-mini">
-          <div className="cf-stat-mini">
-            <span className="cf-stat-mini-value">{stats.total}</span>
-            <span className="cf-stat-mini-label">Total</span>
-          </div>
+          
           <div className="cf-stat-mini" style={{ '--mini-color': '#16a34a' }}>
             <span className="cf-stat-mini-value">{stats.aprovados}</span>
             <span className="cf-stat-mini-label">Aprovados</span>
@@ -706,7 +761,7 @@ export default function ColaboradorDashboard() {
             <span className="cf-stat-mini-value">{stats.emFat}</span>
             <span className="cf-stat-mini-label">Em Faturamento</span>
           </div>
-          <div className="cf-stat-mini" style={{ '--mini-color': '#2563eb' }}>
+          <div className="cf-stat-mini" style={{ '--mini-color': '#3a49ed' }}>
             <span className="cf-stat-mini-value">{stats.faturados}</span>
             <span className="cf-stat-mini-label">Faturados</span>
           </div>
@@ -719,7 +774,7 @@ export default function ColaboradorDashboard() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por pedido, mês de utilização..."
+            placeholder="Buscar por pedido, condomínio, CNPJ..."
           />
           {search && (
             <button className="cf-search-clear" onClick={() => setSearch('')}>
@@ -750,8 +805,8 @@ export default function ColaboradorDashboard() {
             <tr>
               <th>Pedido</th>
               <th>Vencimento</th>
-              <th>Mês de utilização</th>
-              <th>Dias</th>
+              <th>Competência</th>
+              <th>Qtd. funcionários</th>
               <th>Valor Total</th>
               <th>Status</th>
               <th>Timeline</th>
@@ -777,12 +832,19 @@ export default function ColaboradorDashboard() {
               filtered.map((p) => (
                 <tr key={p.id}>
                   <td>
-                    <div className="cf-id-main">{p.id}</div>
-                    
+                    <div className="cf-id-main">Pedido #{p.id}</div>
+
+                    <div className="cf-id-sub" style={{ marginTop: 4 }}>
+                      {p.nomeCondominio}
+                    </div>
+
+                    <div className="cf-id-sub" style={{ marginTop: 4 }}>
+                      CNPJ: {p.cnpj}
+                    </div>
 
                     {p.importadoEm && (
                       <div className="cf-id-sub" style={{ marginTop: 4 }}>
-                        Importado em {fmtDate(p.importadoEm)}
+                        Processado em {fmtDate(p.importadoEm)}
                       </div>
                     )}
 
@@ -806,19 +868,16 @@ export default function ColaboradorDashboard() {
                   <td style={{ fontSize: 13 }}>{p.mesUtilizacao}</td>
 
                   <td style={{ fontFamily: 'var(--mono)', fontSize: 12 }}>
-                    {p.quantidadeDias}
+                    {p.totalFuncionarios}
                   </td>
 
                   <td style={{ fontWeight: 600, color: '#16a34a' }}>
-                    {Number(p.valorTotal || 0).toLocaleString('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
-                    })}
+                    {fmtMoney(p.valorTotal)}
                   </td>
 
                   <td>
                     {p.status === 'faturado' || p.status === 'disponivel_para_funcionario' ? (
-                      <span className={`cf-badge ${p.status}`}>
+                      <span className={`cf-badge ${getStatusClass(p.status)}`}>
                         <span className="cf-badge-dot" />
                         {statusLabel[p.status] || p.status}
                       </span>
@@ -832,7 +891,6 @@ export default function ColaboradorDashboard() {
                           <option value="em_faturamento">Em faturamento</option>
                           <option value="cancelado">Cancelar</option>
                         </select>
-                      
                       </div>
                     )}
                   </td>
@@ -844,7 +902,7 @@ export default function ColaboradorDashboard() {
                         setDetailsPedido(p)
                         setDetailsOpen(true)
                       }}
-                      title="Ver timeline e benefícios"
+                      title="Ver timeline"
                     >
                       <Info size={14} />
                       Ver
@@ -912,7 +970,7 @@ export default function ColaboradorDashboard() {
               <div>
                 <div className="cf-modal-title">Importar documentos</div>
                 <div className="cf-modal-sub">
-                  Pedido {selectedPedido.id} · {selectedPedido.mesUtilizacao}
+                  Pedido {selectedPedido.id} · {selectedPedido.nomeCondominio}
                 </div>
               </div>
 
@@ -935,16 +993,14 @@ export default function ColaboradorDashboard() {
                 </div>
 
                 <div className="cf-resumo-item">
-                  <div className="cf-resumo-label">Dias trabalhados</div>
-                  <div className="cf-resumo-val">
-                    {selectedPedido.quantidadeDias}
-                  </div>
+                  <div className="cf-resumo-label">Funcionários</div>
+                  <div className="cf-resumo-val">{selectedPedido.totalFuncionarios}</div>
                 </div>
 
                 <div className="cf-resumo-item">
                   <div className="cf-resumo-label">Status</div>
                   <span
-                    className={`cf-badge ${selectedPedido.status}`}
+                    className={`cf-badge ${getStatusClass(selectedPedido.status)}`}
                     style={{ marginTop: 2 }}
                   >
                     <span className="cf-badge-dot" />
@@ -1170,24 +1226,26 @@ export default function ColaboradorDashboard() {
                 <div className="cf-details-card">
                   <div className="cf-details-label">Valor Total</div>
                   <div className="cf-details-value cf-value-green">
-                    {Number(detailsPedido.valorTotal || 0).toLocaleString('pt-BR', {
-                      style: 'currency',
-                      currency: 'BRL',
-                    })}
+                    {fmtMoney(detailsPedido.valorTotal)}
                   </div>
                 </div>
+
                 <div className="cf-details-card">
                   <div className="cf-details-label">Dias Trabalhados</div>
                   <div className="cf-details-value">{detailsPedido.quantidadeDias}</div>
                 </div>
+
                 <div className="cf-details-card">
                   <div className="cf-details-label">Vencimento</div>
-                  <div className="cf-details-value">{fmtDate(detailsPedido.dataVencimento)}</div>
+                  <div className="cf-details-value">
+                    {fmtDate(detailsPedido.dataVencimento)}
+                  </div>
                 </div>
+
                 <div className="cf-details-card">
                   <div className="cf-details-label">Status</div>
                   <div className="cf-details-value">
-                    <span className={`cf-badge ${detailsPedido.status}`}>
+                    <span className={`cf-badge ${getStatusClass(detailsPedido.status)}`}>
                       <span className="cf-badge-dot" />
                       {statusLabel[detailsPedido.status] || detailsPedido.status}
                     </span>
@@ -1207,7 +1265,14 @@ export default function ColaboradorDashboard() {
                       </div>
                     </div>
                   </div>
-                  <div className={`cf-timeline-item ${['aprovado', 'em_faturamento', 'disponivel_para_funcionario', 'faturado'].includes(detailsPedido.status) ? 'cf-timeline-done' : ''}`}>
+
+                  <div
+                    className={`cf-timeline-item ${
+                      ['aprovado', 'em_faturamento', 'disponivel_para_funcionario', 'faturado'].includes(detailsPedido.status)
+                        ? 'cf-timeline-done'
+                        : ''
+                    }`}
+                  >
                     <div className="cf-timeline-dot" />
                     <div className="cf-timeline-content">
                       <div className="cf-timeline-label">Aprovado</div>
@@ -1216,14 +1281,26 @@ export default function ColaboradorDashboard() {
                       </div>
                     </div>
                   </div>
-                  <div className={`cf-timeline-item ${['em_faturamento', 'disponivel_para_funcionario', 'faturado'].includes(detailsPedido.status) ? 'cf-timeline-done' : ''}`}>
+
+                  <div
+                    className={`cf-timeline-item ${
+                      ['em_faturamento', 'disponivel_para_funcionario', 'faturado'].includes(detailsPedido.status)
+                        ? 'cf-timeline-done'
+                        : ''
+                    }`}
+                  >
                     <div className="cf-timeline-dot" />
                     <div className="cf-timeline-content">
                       <div className="cf-timeline-label">Em Faturamento</div>
                       <div className="cf-timeline-date">-</div>
                     </div>
                   </div>
-                  <div className={`cf-timeline-item ${detailsPedido.status === 'faturado' ? 'cf-timeline-done' : ''}`}>
+
+                  <div
+                    className={`cf-timeline-item ${
+                      detailsPedido.status === 'faturado' ? 'cf-timeline-done' : ''
+                    }`}
+                  >
                     <div className="cf-timeline-dot" />
                     <div className="cf-timeline-content">
                       <div className="cf-timeline-label">Faturado</div>
@@ -1233,37 +1310,30 @@ export default function ColaboradorDashboard() {
                 </div>
               </div>
 
-              {detailsPedido.dadosRequisicao && (
-                <div className="cf-import-info">
-                  <div className="cf-import-title">Dados da Importação</div>
-                  <div className="cf-import-grid">
-                    {detailsPedido.dadosRequisicao.periodo_inicio && (
-                      <div className="cf-import-item">
-                        <span className="cf-import-label">Período</span>
-                        <span className="cf-import-value">
-                          {detailsPedido.dadosRequisicao.periodo_inicio} até {detailsPedido.dadosRequisicao.periodo_fim}
-                        </span>
-                      </div>
-                    )}
-                    {detailsPedido.dadosRequisicao.competencia_mes && (
-                      <div className="cf-import-item">
-                        <span className="cf-import-label">Competência</span>
-                        <span className="cf-import-value">
-                          {detailsPedido.dadosRequisicao.competencia_mes}/{detailsPedido.dadosRequisicao.competencia_ano}
-                        </span>
-                      </div>
-                    )}
-                    {detailsPedido.dadosRequisicao.vencimento && (
-                      <div className="cf-import-item">
-                        <span className="cf-import-label">Vencimento</span>
-                        <span className="cf-import-value">
-                          {fmtDate(detailsPedido.dadosRequisicao.vencimento)}
-                        </span>
-                      </div>
-                    )}
+              <div className="cf-import-info">
+                <div className="cf-import-title">Dados da Importação</div>
+                <div className="cf-import-grid">
+                  <div className="cf-import-item">
+                    <span className="cf-import-label">Condomínio</span>
+                    <span className="cf-import-value">{detailsPedido.nomeCondominio}</span>
+                  </div>
+
+                  <div className="cf-import-item">
+                    <span className="cf-import-label">CNPJ</span>
+                    <span className="cf-import-value">{detailsPedido.cnpj}</span>
+                  </div>
+
+                  <div className="cf-import-item">
+                    <span className="cf-import-label">Competência</span>
+                    <span className="cf-import-value">{detailsPedido.mesUtilizacao}</span>
+                  </div>
+
+                  <div className="cf-import-item">
+                    <span className="cf-import-label">Funcionários</span>
+                    <span className="cf-import-value">{detailsPedido.totalFuncionarios}</span>
                   </div>
                 </div>
-              )}
+              </div>
             </div>
 
             <div className="cf-modal-footer">
