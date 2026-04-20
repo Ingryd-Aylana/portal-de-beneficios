@@ -152,13 +152,11 @@ function ConfirmModal({
 const statusLabel = {
   aprovado: 'Aprovado',
   em_faturamento: 'Em faturamento',
-  disponivel_para_funcionario: 'Disponível para funcionário',
   faturado: 'Faturado',
   cancelado: 'Cancelado',
 }
 
 const getStatusClass = (status) => {
-  if (status === 'disponivel_para_funcionario') return 'disponivel_para_funcionario'
   if (status === 'faturado') return 'faturado'
   if (status === 'cancelado') return 'cancelado'
   if (status === 'em_faturamento') return 'em_faturamento'
@@ -335,9 +333,6 @@ export default function ColaboradorDashboard() {
       total: pedidos.length,
       aprovados: pedidos.filter((p) => p.status === 'aprovado').length,
       emFat: pedidos.filter((p) => p.status === 'em_faturamento').length,
-      disponiveisFuncionario: pedidos.filter(
-        (p) => p.status === 'disponivel_para_funcionario'
-      ).length,
       faturados: pedidos.filter((p) => p.status === 'faturado').length,
       cancelados: pedidos.filter((p) => p.status === 'cancelado').length,
     }),
@@ -373,15 +368,6 @@ export default function ColaboradorDashboard() {
         type: 'warning',
         title: 'Pedido cancelado',
         message: 'Não é possível baixar o faturamento de um pedido cancelado.',
-      })
-      return
-    }
-
-    if (pedido.status === 'faturado') {
-      pushToast({
-        type: 'info',
-        title: 'Pedido já faturado',
-        message: 'Este pedido já foi concluído e não pode voltar para faturamento.',
       })
       return
     }
@@ -425,8 +411,6 @@ export default function ColaboradorDashboard() {
   }
 
   function handleChangeStatus(pedido, newStatus) {
-    if (pedido.status === 'faturado') return
-
     if (newStatus === 'cancelado') {
       openCancelModal(pedido)
       return
@@ -469,26 +453,6 @@ export default function ColaboradorDashboard() {
         type: 'info',
         title: 'Importação bloqueada',
         message: 'Este pedido está cancelado.',
-        duration: 5000,
-      })
-      return
-    }
-
-    if (pedido.status === 'faturado') {
-      pushToast({
-        type: 'info',
-        title: 'Importação bloqueada',
-        message: 'Este pedido já foi faturado e não permite novos documentos.',
-        duration: 5000,
-      })
-      return
-    }
-
-    if (pedido.status === 'disponivel_para_funcionario') {
-      pushToast({
-        type: 'info',
-        title: 'Documentos já enviados',
-        message: 'Este pedido já está disponível para o funcionário.',
         duration: 5000,
       })
       return
@@ -615,7 +579,7 @@ export default function ColaboradorDashboard() {
           item.id === selectedPedido.id
             ? {
                 ...item,
-                status: response?.status || 'disponivel_para_funcionario',
+                status: response?.status,
                 documentosImportados: response?.documentosImportados || [],
                 importadoEm:
                   response?.importadoEm ||
@@ -752,7 +716,6 @@ export default function ColaboradorDashboard() {
         </div>
 
         <div className="cf-stats-mini">
-          
           <div className="cf-stat-mini" style={{ '--mini-color': '#16a34a' }}>
             <span className="cf-stat-mini-value">{stats.aprovados}</span>
             <span className="cf-stat-mini-label">Aprovados</span>
@@ -791,9 +754,7 @@ export default function ColaboradorDashboard() {
           <option value="todos">Todos os status</option>
           <option value="aprovado">Aprovados</option>
           <option value="em_faturamento">Em faturamento</option>
-          <option value="disponivel_para_funcionario">
-            Disponíveis para funcionário
-          </option>
+          
           <option value="faturado">Faturados</option>
           <option value="cancelado">Cancelados</option>
         </select>
@@ -876,23 +837,18 @@ export default function ColaboradorDashboard() {
                   </td>
 
                   <td>
-                    {p.status === 'faturado' || p.status === 'disponivel_para_funcionario' ? (
-                      <span className={`cf-badge ${getStatusClass(p.status)}`}>
-                        <span className="cf-badge-dot" />
-                        {statusLabel[p.status] || p.status}
-                      </span>
-                    ) : (
-                      <div className="cf-status-select">
-                        <select
-                          value={p.status}
-                          onChange={(e) => handleChangeStatus(p, e.target.value)}
-                        >
-                          <option value="aprovado">Aprovado</option>
-                          <option value="em_faturamento">Em faturamento</option>
-                          <option value="cancelado">Cancelar</option>
-                        </select>
-                      </div>
-                    )}
+                    <div className="cf-status-select">
+                      <select
+                        value={p.status}
+                        onChange={(e) => handleChangeStatus(p, e.target.value)}
+                      >
+                        <option value="aprovado">Aprovado</option>
+                        <option value="em_faturamento">Em faturamento</option>
+                       
+                        <option value="faturado">Faturado</option>
+                        <option value="cancelado">Cancelar</option>
+                      </select>
+                    </div>
                   </td>
 
                   <td>
@@ -913,12 +869,10 @@ export default function ColaboradorDashboard() {
                     <button
                       className="cf-btn"
                       onClick={() => handleDownload(p)}
-                      disabled={downloadingId === p.id}
+                      disabled={downloadingId === p.id || p.status === 'cancelado'}
                       title={
                         p.status === 'cancelado'
                           ? 'Pedido cancelado'
-                          : p.status === 'faturado'
-                          ? 'Pedido já faturado'
                           : 'Baixar faturamento'
                       }
                     >
@@ -931,24 +885,15 @@ export default function ColaboradorDashboard() {
                     <button
                       className="cf-btn"
                       onClick={() => openImport(p)}
-                      disabled={
-                        p.status === 'faturado' ||
-                        p.status === 'disponivel_para_funcionario'
-                      }
+                      disabled={p.status === 'cancelado'}
                       title={
-                        p.status === 'faturado'
-                          ? 'Pedido já faturado. Importação encerrada.'
-                          : p.status === 'disponivel_para_funcionario'
-                          ? 'Documentos já importados e disponíveis para o funcionário.'
+                        p.status === 'cancelado'
+                          ? 'Pedido cancelado'
                           : 'Importar documentos'
                       }
                     >
                       <FileSpreadsheet size={14} />
-                      {p.status === 'disponivel_para_funcionario'
-                        ? 'Enviado'
-                        : p.status === 'faturado'
-                        ? 'Encerrado'
-                        : 'Importar'}
+                      Importar
                     </button>
                   </td>
                 </tr>
@@ -1268,7 +1213,7 @@ export default function ColaboradorDashboard() {
 
                   <div
                     className={`cf-timeline-item ${
-                      ['aprovado', 'em_faturamento', 'disponivel_para_funcionario', 'faturado'].includes(detailsPedido.status)
+                      ['aprovado', 'em_faturamento', 'faturado'].includes(detailsPedido.status)
                         ? 'cf-timeline-done'
                         : ''
                     }`}
@@ -1284,7 +1229,7 @@ export default function ColaboradorDashboard() {
 
                   <div
                     className={`cf-timeline-item ${
-                      ['em_faturamento', 'disponivel_para_funcionario', 'faturado'].includes(detailsPedido.status)
+                      ['em_faturamento', 'faturado'].includes(detailsPedido.status)
                         ? 'cf-timeline-done'
                         : ''
                     }`}
