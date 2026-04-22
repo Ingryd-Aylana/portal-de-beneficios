@@ -165,7 +165,8 @@ const getStatusClass = (status) => {
 
 const extrairResumoPedido = (pedidoApi) => {
   const dadosReq = pedidoApi?.dadosRequisicao || pedidoApi?.dados_requisicao || {}
-  const movs = Array.isArray(dadosReq.movimentacoes_detalhada)
+
+  const movsDetalhadas = Array.isArray(dadosReq.movimentacoes_detalhada)
     ? dadosReq.movimentacoes_detalhada
     : []
 
@@ -173,47 +174,139 @@ const extrairResumoPedido = (pedidoApi) => {
   const funcionariosNovos = Array.isArray(novos.funcionarios) ? novos.funcionarios : []
   const condominiosNovos = Array.isArray(novos.condominios) ? novos.condominios : []
 
-  const primeiroMov = movs[0] || {}
-  const primeiroCondominio = condominiosNovos[0] || {}
+  const condominiosResumo = Array.isArray(dadosReq.condominios) ? dadosReq.condominios : []
+  const summary = dadosReq.summary || {}
 
-  const valorTotal = movs.reduce(
-    (acc, item) => acc + Number(item.valor_recarga_bene || 0),
-    0
-  )
+  const primeiroMov = movsDetalhadas[0] || {}
+  const primeiroCondominioNovo = condominiosNovos[0] || {}
+  const primeiroCondominioResumo = condominiosResumo[0] || {}
 
-  const funcionariosUnicos = [...new Set(movs.map((m) => m.nome_func).filter(Boolean))]
+  const usandoFormatoDetalhado = movsDetalhadas.length > 0
+  const usandoFormatoResumo = condominiosResumo.length > 0
 
-  const competenciaBruta =
-    primeiroMov.periodo2 ||
-    primeiroMov.periodos ||
-    dadosReq.competencia ||
-    dadosReq.vencimento ||
-    pedidoApi.processed_at
-
+  let valorTotal = 0
+  let totalFuncionarios = 0
+  let nomeCondominio = '-'
+  let cnpj = '-'
+  let cidade = '-'
+  let uf = '-'
+  let dataVencimento = '-'
+  let quantidadeDias = '-'
   let mesUtilizacao = '-'
-  if (competenciaBruta) {
-    const data = new Date(competenciaBruta)
-    if (!Number.isNaN(data.getTime())) {
-      mesUtilizacao = data.toLocaleDateString('pt-BR', {
-        month: '2-digit',
-        year: 'numeric',
-      })
-    } else {
-      mesUtilizacao = fmtDate(competenciaBruta)
+
+  if (usandoFormatoDetalhado) {
+    valorTotal = movsDetalhadas.reduce(
+      (acc, item) => acc + Number(item.valor_recarga_bene || 0),
+      0
+    )
+
+    const funcionariosUnicos = [
+      ...new Set(movsDetalhadas.map((m) => m.nome_func).filter(Boolean)),
+    ]
+
+    totalFuncionarios = funcionariosUnicos.length || funcionariosNovos.length
+
+    nomeCondominio =
+      primeiroCondominioNovo.razao_social ||
+      primeiroMov.departamento ||
+      primeiroMov.cnpj ||
+      '-'
+
+    cnpj = primeiroMov.cnpj || primeiroCondominioNovo.cnpj || '-'
+    cidade = primeiroMov.cidade || primeiroCondominioNovo.cidade || '-'
+    uf = primeiroMov.uf || primeiroCondominioNovo.uf || '-'
+
+    dataVencimento =
+      primeiroMov.vencimento ||
+      dadosReq.vencimento ||
+      '-'
+
+    quantidadeDias = Math.max(
+      ...movsDetalhadas.map((m) => Number(m.quantidade || 0)),
+      0
+    ) || '-'
+
+    const competenciaBruta =
+      primeiroMov.periodo2 ||
+      primeiroMov.periodos ||
+      dadosReq.competencia ||
+      dadosReq.vencimento ||
+      pedidoApi.processed_at
+
+    if (competenciaBruta) {
+      const data = new Date(competenciaBruta)
+      if (!Number.isNaN(data.getTime())) {
+        mesUtilizacao = data.toLocaleDateString('pt-BR', {
+          month: '2-digit',
+          year: 'numeric',
+        })
+      } else {
+        mesUtilizacao = fmtDate(competenciaBruta)
+      }
+    }
+  } else if (usandoFormatoResumo) {
+    console.log('DEBUG VENCIMENTO', {
+      id: pedidoApi.id,
+      vencimentoCondominio: primeiroCondominioResumo?.vencimento,
+      vencimentoFuncionario: primeiroCondominioResumo?.funcionarios?.[0]?.vencimento,
+      vencimentoMovimentacao: primeiroCondominioResumo?.funcionarios?.[0]?.movimentacoes?.[0]?.vencimento,
+      vencimentoSummary: summary?.vencimento,
+      vencimentoDadosReq: dadosReq?.vencimento,
+      primeiroCondominioResumo,
+    })
+    valorTotal =
+      condominiosResumo.reduce(
+        (acc, cond) => acc + Number(cond.valor_condo || 0),
+        0
+      ) || Number(summary.valor_total_beneficios || 0)
+
+    totalFuncionarios = condominiosResumo.reduce(
+      (acc, cond) => acc + (Array.isArray(cond.funcionarios) ? cond.funcionarios.length : 0),
+      0
+    )
+
+    nomeCondominio = primeiroCondominioResumo.nome || '-'
+    cnpj = primeiroCondominioResumo.cnpj || summary.primeiro_cnpj_processado || '-'
+
+    const vencimentoCondominio =
+      primeiroCondominioResumo?.vencimento
+
+    const vencimentoFuncionario =
+      primeiroCondominioResumo?.funcionarios?.[0]?.vencimento
+
+    const vencimentoMovimentacao =
+      primeiroCondominioResumo?.funcionarios?.[0]?.movimentacoes?.[0]?.vencimento
+
+    const vencimentoSummary =
+      summary?.vencimento
+
+    dataVencimento =
+      vencimentoCondominio ||
+      vencimentoFuncionario ||
+      vencimentoMovimentacao ||
+      vencimentoSummary ||
+      dadosReq.vencimento ||
+      '-'
+
+    quantidadeDias = '-'
+
+    const competenciaBruta =
+      summary.data_competencia_arquivo ||
+      dadosReq.competencia ||
+      pedidoApi.processed_at
+
+    if (competenciaBruta) {
+      const data = new Date(competenciaBruta)
+      if (!Number.isNaN(data.getTime())) {
+        mesUtilizacao = data.toLocaleDateString('pt-BR', {
+          month: '2-digit',
+          year: 'numeric',
+        })
+      } else {
+        mesUtilizacao = fmtDate(competenciaBruta)
+      }
     }
   }
-
-  const quantidadeDias = movs.length
-    ? Math.max(...movs.map((m) => Number(m.quantidade || 0)))
-    : '-'
-
-  const dataVencimento = primeiroMov.vencimento || dadosReq.vencimento || '-'
-
-  const nomeCondominio =
-    primeiroCondominio.razao_social ||
-    primeiroMov.departamento ||
-    primeiroMov.cnpj ||
-    '-'
 
   return {
     id: pedidoApi.id,
@@ -232,10 +325,10 @@ const extrairResumoPedido = (pedidoApi) => {
     dadosRequisicao: dadosReq,
     valorTotal,
     nomeCondominio,
-    cnpj: primeiroMov.cnpj || primeiroCondominio.cnpj || '-',
-    cidade: primeiroMov.cidade || primeiroCondominio.cidade || '-',
-    uf: primeiroMov.uf || primeiroCondominio.uf || '-',
-    totalFuncionarios: funcionariosUnicos.length || funcionariosNovos.length,
+    cnpj,
+    cidade,
+    uf,
+    totalFuncionarios,
   }
 }
 
@@ -301,10 +394,10 @@ export default function ColaboradorDashboard() {
       const lista = Array.isArray(response)
         ? response
         : Array.isArray(response?.data)
-        ? response.data
-        : Array.isArray(response?.pedidos)
-        ? response.pedidos
-        : []
+          ? response.data
+          : Array.isArray(response?.pedidos)
+            ? response.pedidos
+            : []
 
       const pedidosFormatados = lista.map(extrairResumoPedido)
       setPedidos(pedidosFormatados)
@@ -420,12 +513,12 @@ export default function ColaboradorDashboard() {
       prev.map((item) =>
         item.id === pedido.id
           ? {
-              ...item,
-              status: newStatus,
-              ...(newStatus !== 'cancelado'
-                ? { motivoCancelamento: '', canceladoEm: null }
-                : {}),
-            }
+            ...item,
+            status: newStatus,
+            ...(newStatus !== 'cancelado'
+              ? { motivoCancelamento: '', canceladoEm: null }
+              : {}),
+          }
           : item
       )
     )
@@ -578,13 +671,13 @@ export default function ColaboradorDashboard() {
         prev.map((item) =>
           item.id === selectedPedido.id
             ? {
-                ...item,
-                status: response?.status,
-                documentosImportados: response?.documentosImportados || [],
-                importadoEm:
-                  response?.importadoEm ||
-                  new Date().toLocaleDateString('pt-BR'),
-              }
+              ...item,
+              status: response?.status,
+              documentosImportados: response?.documentosImportados || [],
+              importadoEm:
+                response?.importadoEm ||
+                new Date().toLocaleDateString('pt-BR'),
+            }
             : item
         )
       )
@@ -646,11 +739,11 @@ export default function ColaboradorDashboard() {
       prev.map((item) =>
         item.id === cancelPedido?.id
           ? {
-              ...item,
-              status: 'cancelado',
-              motivoCancelamento: motivo,
-              canceladoEm: new Date().toLocaleDateString('pt-BR'),
-            }
+            ...item,
+            status: 'cancelado',
+            motivoCancelamento: motivo,
+            canceladoEm: new Date().toLocaleDateString('pt-BR'),
+          }
           : item
       )
     )
@@ -754,7 +847,7 @@ export default function ColaboradorDashboard() {
           <option value="todos">Todos os status</option>
           <option value="aprovado">Aprovados</option>
           <option value="em_faturamento">Em faturamento</option>
-          
+
           <option value="faturado">Faturados</option>
           <option value="cancelado">Cancelados</option>
         </select>
@@ -795,17 +888,11 @@ export default function ColaboradorDashboard() {
                   <td>
                     <div className="cf-id-main">Pedido #{p.id}</div>
 
-                    <div className="cf-id-sub" style={{ marginTop: 4 }}>
-                      {p.nomeCondominio}
-                    </div>
 
-                    <div className="cf-id-sub" style={{ marginTop: 4 }}>
-                      CNPJ: {p.cnpj}
-                    </div>
 
                     {p.importadoEm && (
                       <div className="cf-id-sub" style={{ marginTop: 4 }}>
-                        Processado em {fmtDate(p.importadoEm)}
+                        Processado: {fmtDate(p.importadoEm)}
                       </div>
                     )}
 
@@ -844,7 +931,7 @@ export default function ColaboradorDashboard() {
                       >
                         <option value="aprovado">Aprovado</option>
                         <option value="em_faturamento">Em faturamento</option>
-                       
+
                         <option value="faturado">Faturado</option>
                         <option value="cancelado">Cancelar</option>
                       </select>
@@ -1212,11 +1299,10 @@ export default function ColaboradorDashboard() {
                   </div>
 
                   <div
-                    className={`cf-timeline-item ${
-                      ['aprovado', 'em_faturamento', 'faturado'].includes(detailsPedido.status)
-                        ? 'cf-timeline-done'
-                        : ''
-                    }`}
+                    className={`cf-timeline-item ${['aprovado', 'em_faturamento', 'faturado'].includes(detailsPedido.status)
+                      ? 'cf-timeline-done'
+                      : ''
+                      }`}
                   >
                     <div className="cf-timeline-dot" />
                     <div className="cf-timeline-content">
@@ -1228,11 +1314,10 @@ export default function ColaboradorDashboard() {
                   </div>
 
                   <div
-                    className={`cf-timeline-item ${
-                      ['em_faturamento', 'faturado'].includes(detailsPedido.status)
-                        ? 'cf-timeline-done'
-                        : ''
-                    }`}
+                    className={`cf-timeline-item ${['em_faturamento', 'faturado'].includes(detailsPedido.status)
+                      ? 'cf-timeline-done'
+                      : ''
+                      }`}
                   >
                     <div className="cf-timeline-dot" />
                     <div className="cf-timeline-content">
@@ -1242,9 +1327,8 @@ export default function ColaboradorDashboard() {
                   </div>
 
                   <div
-                    className={`cf-timeline-item ${
-                      detailsPedido.status === 'faturado' ? 'cf-timeline-done' : ''
-                    }`}
+                    className={`cf-timeline-item ${detailsPedido.status === 'faturado' ? 'cf-timeline-done' : ''
+                      }`}
                   >
                     <div className="cf-timeline-dot" />
                     <div className="cf-timeline-content">
@@ -1258,15 +1342,6 @@ export default function ColaboradorDashboard() {
               <div className="cf-import-info">
                 <div className="cf-import-title">Dados da Importação</div>
                 <div className="cf-import-grid">
-                  <div className="cf-import-item">
-                    <span className="cf-import-label">Condomínio</span>
-                    <span className="cf-import-value">{detailsPedido.nomeCondominio}</span>
-                  </div>
-
-                  <div className="cf-import-item">
-                    <span className="cf-import-label">CNPJ</span>
-                    <span className="cf-import-value">{detailsPedido.cnpj}</span>
-                  </div>
 
                   <div className="cf-import-item">
                     <span className="cf-import-label">Competência</span>

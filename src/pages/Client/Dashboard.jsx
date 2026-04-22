@@ -243,21 +243,6 @@ export default function Dashboard() {
                   )}
                 </div>
               </div>
-
-              <div className="db-condo-card-actions">
-                <button
-                  className="db-condo-action-btn"
-                  onClick={() => navigate('/faturamento')}
-                >
-                  Ver faturamento
-                </button>
-                <button
-                  className="db-condo-action-btn db-condo-action-btn-secondary"
-                  onClick={() => navigate('/pendentes')}
-                >
-                  Ver pendências
-                </button>
-              </div>
             </div>
           )}
 
