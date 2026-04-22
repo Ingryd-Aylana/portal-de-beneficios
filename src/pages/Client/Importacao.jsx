@@ -53,6 +53,17 @@ function getCpf(row) {
   return String(row?.cpf || row?.cpf_func || row?.cpf_funcionario || row?.CPF || '').trim()
 }
 
+function getCep(row) {
+  return String(
+    row?.cep ||
+      row?.CEP ||
+      row?.cep_condominio ||
+      row?.cep_funcionario ||
+      row?.codigo_postal ||
+      ''
+  ).trim()
+}
+
 function getRowKey(row) {
   const cpf = getCpf(row)
   if (cpf) return `${getCondominio(row)}::${getNomeColaborador(row)}::${cpf}`
@@ -77,6 +88,37 @@ function normalizeText(value) {
 
 function onlyDigits(value) {
   return String(value || '').replace(/\D/g, '')
+}
+
+function isValidCPF(value) {
+  const cpf = onlyDigits(value)
+
+  if (!cpf || cpf.length !== 11) return false
+  if (/^(\d)\1{10}$/.test(cpf)) return false
+
+  let sum = 0
+  for (let i = 0; i < 9; i += 1) {
+    sum += Number(cpf[i]) * (10 - i)
+  }
+
+  let remainder = (sum * 10) % 11
+  if (remainder === 10) remainder = 0
+  if (remainder !== Number(cpf[9])) return false
+
+  sum = 0
+  for (let i = 0; i < 10; i += 1) {
+    sum += Number(cpf[i]) * (11 - i)
+  }
+
+  remainder = (sum * 10) % 11
+  if (remainder === 10) remainder = 0
+
+  return remainder === Number(cpf[10])
+}
+
+function isValidCEP(value) {
+  const cep = onlyDigits(value)
+  return cep.length === 8
 }
 
 function getNomeProduto(item) {
@@ -199,6 +241,48 @@ function enrichRowsWithBenefits(rows = [], movimentacoes = []) {
 
 function getQuantidadeDias(row) {
   return Number(row?.quantidade_dias || row?.quantidade || row?.dias || row?.dias_trabalhados || row?.quantidadeDias || 0)
+}
+
+function getRowValidation(row) {
+  const erros = []
+
+  const nome = getNomeColaborador(row)
+  const condominio = getCondominio(row)
+  const cpf = getCpf(row)
+  const cep = getCep(row)
+  const valor = getValorRow(row)
+
+  if (!normalizeText(nome)) {
+    erros.push('Nome do colaborador não informado')
+  }
+
+  if (!normalizeText(condominio)) {
+    erros.push('Condomínio não informado')
+  }
+
+  if (!cpf) {
+    erros.push('CPF não informado')
+  } else if (!isValidCPF(cpf)) {
+    erros.push('CPF inválido')
+  }
+
+  if (!cep) {
+    erros.push('CEP não informado')
+  } else if (!isValidCEP(cep)) {
+    erros.push('CEP inválido')
+  }
+
+  if (Number(valor) <= 0) {
+    erros.push('Valor inválido')
+  }
+
+  const bloqueadoPorValor = Number(valor) > 2500
+
+  return {
+    erros,
+    bloqueadoPorValor,
+    bloqueado: erros.length > 0 || bloqueadoPorValor,
+  }
 }
 
 function buildPreviewRowsFromMovimentacoes(movimentacoes = []) {
@@ -345,45 +429,63 @@ export default function Importacao() {
   })
 
   async function handleResult({ file }) {
-    try {
-      const response = await uploadService.uploadFile(file)
-      console.log('UPLOAD RESPONSE:', response)
+  try {
+    const response = await uploadService.uploadFile(file)
+    console.log('UPLOAD RESPONSE:', response)
+
+    const id = 'IMP-' + (response?.file_upload_id || Date.now())
+    const tipo = file.name.toLowerCase().includes('fat') ? 'faturamento' : 'compra'
+
+    const movimentacoes =
+      response?.data_to_backend?.movimentacoes_detalhada ||
+      response?.movimentacoes_detalhada ||
+      response?.movimentacoes ||
+      []
+
+    console.log('movimentacoes_detalhada:', movimentacoes)
+
+    const previewRowsBackend =
+      response?.summary?.total_por_beneficiario ||
+      response?.data_to_backend?.summary?.total_por_beneficiario ||
+      response?.total_por_beneficiario ||
+      response?.resumo ||
+      response?.preview ||
+      []
+
+    console.log('previewRowsBackend:', previewRowsBackend)
+
+    const previewRows =
+      Array.isArray(previewRowsBackend) && previewRowsBackend.length > 0
+        ? previewRowsBackend
+        : Array.isArray(movimentacoes) && movimentacoes.length > 0
+        ? buildPreviewRowsFromMovimentacoes(movimentacoes)
+        : []
+
+    console.log('previewRows final:', previewRows)
+
+    const parsed = enrichRowsWithBenefits(previewRows, movimentacoes)
+    console.log('parsed rows:', parsed)
+
+    const errosImportacao =
+      response?.errors ||
+      response?.invalid_rows ||
+      response?.rejeitados ||
+      response?.linhas_com_erro ||
+      response?.summary?.errors ||
+      response?.data_to_backend?.summary?.errors ||
+      []
+
+    const semPreview = !Array.isArray(parsed) || parsed.length === 0
+
+    if (semPreview) {
+      console.warn('Importação sem preview. Possíveis erros:', errosImportacao)
 
       setData(response)
-
-      const id = 'IMP-' + (response?.file_upload_id || Date.now())
-      const tipo = file.name.toLowerCase().includes('fat') ? 'faturamento' : 'compra'
-
-      const movimentacoes = response?.data_to_backend?.movimentacoes_detalhada || response?.movimentacoes_detalhada || response?.movimentacoes || []
-      console.log('movimentacoes_detalhada:', movimentacoes)
-
-      const previewRowsBackend =
-        response?.summary?.total_por_beneficiario ||
-        response?.data_to_backend?.summary?.total_por_beneficiario ||
-        response?.total_por_beneficiario ||
-        response?.resumo ||
-        response?.preview ||
-        []
-
-      console.log('previewRowsBackend:', previewRowsBackend)
-
-      const previewRows =
-        Array.isArray(previewRowsBackend) && previewRowsBackend.length > 0
-          ? previewRowsBackend
-          : Array.isArray(movimentacoes) && movimentacoes.length > 0
-          ? buildPreviewRowsFromMovimentacoes(movimentacoes)
-          : []
-
-      console.log('previewRows final:', previewRows)
-
-      const parsed = enrichRowsWithBenefits(previewRows, movimentacoes)
-      console.log('parsed rows:', parsed)
-
       setLote({
-        id,
-        arquivo: file.name,
-        tipo,
-        rows: Array.isArray(parsed) ? parsed : [],
+        id: null,
+        arquivo: null,
+        tipo: null,
+        rows: [],
         excluidosPorColab: new Set(),
       })
 
@@ -407,23 +509,76 @@ export default function Importacao() {
         vencimento: '',
       })
 
-      return {
-        success: true,
-        message: response?.detail || 'Importação concluída com sucesso.',
-      }
-    } catch (error) {
-      const errorMessage = error.message.includes('API Error')
-        ? error.message.split('API Error: ')[1]
-        : 'Erro desconhecido na comunicação com o servidor.'
+      let mensagemErro =
+        response?.detail ||
+        response?.message ||
+        response?.error ||
+        'Nenhum registro válido foi encontrado no arquivo. Verifique CPF, CEP e demais campos obrigatórios.'
 
-      console.error('Erro no processamento da importação:', error)
+      if (Array.isArray(errosImportacao) && errosImportacao.length > 0) {
+        const primeiroErro =
+          typeof errosImportacao[0] === 'string'
+            ? errosImportacao[0]
+            : errosImportacao[0]?.message ||
+              errosImportacao[0]?.erro ||
+              JSON.stringify(errosImportacao[0])
+
+        mensagemErro = `Importação rejeitada. ${primeiroErro}`
+      }
 
       return {
         success: false,
-        message: errorMessage,
+        message: mensagemErro,
       }
     }
+
+    setData(response)
+
+    setLote({
+      id,
+      arquivo: file.name,
+      tipo,
+      rows: parsed,
+      excluidosPorColab: new Set(),
+    })
+
+    setEditingIndex(null)
+    setEditValue('')
+    setDetailsOpen(false)
+    setDetailsTitle('')
+    setDetailsBenefits([])
+    setConfirmDeleteOpen(false)
+    setColaboradorParaExcluir(null)
+    setReviewOpen(false)
+    setMostrarSomenteAcima2500(false)
+    setReviewData({
+      totalFuncionarios: 0,
+      totalMovimentacoes: 0,
+      valorTotalBeneficios: 0,
+      periodoInicio: '',
+      periodoFim: '',
+      competenciaMes: '',
+      competenciaAno: '',
+      vencimento: '',
+    })
+
+    return {
+      success: true,
+      message: response?.detail || 'Importação concluída com sucesso.',
+    }
+  } catch (error) {
+    const errorMessage = error.message.includes('API Error')
+      ? error.message.split('API Error: ')[1]
+      : 'Erro desconhecido na comunicação com o servidor.'
+
+    console.error('Erro no processamento da importação:', error)
+
+    return {
+      success: false,
+      message: errorMessage,
+    }
   }
+}
 
   const rowsAtivas = useMemo(() => {
     if (!lote?.rows?.length) return []
@@ -433,10 +588,16 @@ export default function Importacao() {
   }, [lote])
 
   const linhasValidadas = useMemo(() => {
-    return rowsAtivas.map((r) => ({
-      ...r,
-      bloqueado: getValorRow(r) > 2500,
-    }))
+    return rowsAtivas.map((r) => {
+      const validacao = getRowValidation(r)
+
+      return {
+        ...r,
+        bloqueado: validacao.bloqueado,
+        bloqueadoPorValor: validacao.bloqueadoPorValor,
+        errosValidacao: validacao.erros,
+      }
+    })
   }, [rowsAtivas])
 
   const totalBloqueios = useMemo(
@@ -888,8 +1049,8 @@ export default function Importacao() {
             >
               <span className="kpi-label">
                 {mostrarSomenteAcima2500
-                  ? 'Mostrando bloqueados (> R$ 2.500)'
-                  : 'Filtrar registros bloqueados (> R$ 2.500)'}
+                  ? 'Mostrando registros com bloqueio'
+                  : 'Filtrar registros com bloqueio'}
               </span>
               <span className="kpi-value">{totalBloqueios}</span>
             </button>
@@ -954,7 +1115,19 @@ export default function Importacao() {
 
                         <td className="col-status">
                           {r.bloqueado ? (
-                            <span className="tag tag-danger">Bloqueado</span>
+                            <div className="status-stack">
+                              <span className="tag tag-danger">Bloqueado</span>
+
+                              {r.errosValidacao?.length > 0 ? (
+                                <small className="status-detail">
+                                  {r.errosValidacao.join(' • ')}
+                                </small>
+                              ) : r.bloqueadoPorValor ? (
+                                <small className="status-detail">
+                                  Valor acima de R$ 2.500,00
+                                </small>
+                              ) : null}
+                            </div>
                           ) : (
                             <span className="tag tag-ok">OK</span>
                           )}
