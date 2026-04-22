@@ -1,382 +1,278 @@
-.fat-page {
-  padding: 24px;
-  max-width: 1200px;
+.fatv2-page {
+  max-width: 1280px;
   margin: 0 auto;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  padding: 28px 28px 64px;
+  color: #0f172a;
 }
 
-.fat-toolbar {
+.fatv2-hero {
   margin-bottom: 20px;
-  padding: 16px 20px;
-  background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.07);
+  background: linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+  border: 1px solid #e2e8f0;
+  border-radius: 24px;
+  padding: 28px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
 }
 
-.filters-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 16px;
-}
-
-.filter-group {
-  min-width: 260px;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.filter-group label {
-  font-size: 11px;
-  font-weight: 600;
+.fatv2-eyebrow {
+  margin: 0 0 8px;
+  font-size: 12px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #6b7280;
+  color: #1d4ed8;
+  font-weight: 700;
 }
 
-.input-with-icon {
-  position: relative;
-  display: flex;
-  align-items: center;
+.fatv2-title {
+  margin: 0;
+  font-size: 34px;
+  line-height: 1.05;
+  letter-spacing: -0.03em;
 }
 
-.input-with-icon input {
-  width: 100%;
-  padding: 8px 12px 8px 34px;
-  border-radius: 8px;
-  border: 1px solid #d1d5db;
-  background: #f9fafb;
-  font-size: 14px;
-  color: #111827;
-  outline: none;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    background-color 0.15s ease;
+.fatv2-subtitle {
+  margin: 10px 0 0;
+  font-size: 15px;
+  color: #64748b;
+  max-width: 760px;
 }
 
-.input-with-icon input::placeholder {
-  color: #9ca3af;
-}
-
-.input-with-icon input:focus {
-  border-color: #3b82f6;
+.fatv2-toolbar {
+  margin-bottom: 18px;
   background: #ffffff;
-  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.35);
+  border: 1px solid #e2e8f0;
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.04);
 }
 
-.input-icon {
-  position: absolute;
-  left: 10px;
+.fatv2-search {
   display: flex;
   align-items: center;
-  justify-content: center;
-  pointer-events: none;
-  font-size: 14px;
-  color: #9ca3af;
+  gap: 10px;
+  border: 1px solid #dbe2ea;
+  background: #f8fafc;
+  border-radius: 14px;
+  padding: 0 14px;
 }
 
-/* Accordion de folhas */
-.accordion {
+.fatv2-search svg {
+  color: #64748b;
+  flex-shrink: 0;
+}
+
+.fatv2-search input {
+  width: 100%;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  padding: 14px 4px;
+  font-size: 14px;
+  color: #0f172a;
+}
+
+.fatv2-list {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 18px;
 }
 
-.acc-item {
+.fatv2-card {
   background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e5e7eb;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.06);
+  border: 1px solid #e2e8f0;
+  border-radius: 22px;
   overflow: hidden;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.05);
 }
 
-.acc-header {
-  width: 100%;
-  border: none;
-  background: transparent;
-  padding: 14px 16px;
+.fatv2-card-top {
+  padding: 22px;
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: space-between;
-  cursor: pointer;
-  text-align: left;
+  gap: 20px;
+  border-bottom: 1px solid #e2e8f0;
 }
 
-.acc-header:hover {
-  background: #f9fafb;
-}
-
-.acc-main {
+.fatv2-card-main {
   display: flex;
   align-items: center;
-  gap: 24px;
+  gap: 14px;
+  min-width: 0;
 }
 
-.acc-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.acc-avatar {
-  width: 36px;
-  height: 36px;
-  border-radius: 999px;
-  background: #eff6ff;
+.fatv2-icon {
+  width: 46px;
+  height: 46px;
+  border-radius: 14px;
+  background: rgba(29, 78, 216, 0.08);
   color: #1d4ed8;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.fatv2-main-text h2 {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+}
+
+.fatv2-main-text p {
+  margin: 6px 0 0;
   font-size: 13px;
+  color: #64748b;
 }
 
-.acc-text {
+.fatv2-summary {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.acc-title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.acc-sub {
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.acc-col {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  min-width: 140px;
-}
-
-.acc-col .muted {
-  font-size: 11px;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.acc-col strong {
-  font-size: 14px;
-  color: #111827;
-}
-
-.chevron {
-  transition: transform 0.18s ease;
-}
-
-.chevron.open {
-  transform: rotate(180deg);
-}
-
-.badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 500;
-  white-space: nowrap;
-}
-
-.badge-open {
-  background: #ecfdf3;
-  color: #166534;
-  border: 1px solid #bbf7d0;
-}
-
-.badge-closed {
-  background: #fef2f2;
-  color: #b91c1c;
-  border: 1px solid #fecaca;
-}
-
-.acc-body {
-  padding: 8px 16px 12px;
-  border-top: 1px solid #e5e7eb;
-  background: #f9fafb;
-}
-
-.fat-row {
-  display: grid;
-  grid-template-columns: minmax(0, 2fr) minmax(0, 140px) minmax(0, 2.2fr);
-  gap: 16px;
-  padding: 10px 4px;
-  align-items: center;
-  border-bottom: 1px dashed #e5e7eb;
-}
-
-.fat-row:last-child {
-  border-bottom: none;
-}
-
-.fat-row-main {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.fat-row-title {
-  font-size: 14px;
-  font-weight: 600;
-  color: #111827;
-}
-
-.fat-row-sub {
-  font-size: 12px;
-  color: #6b7280;
-}
-
-.fat-row-col {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-
-.fat-row-col .muted {
-  font-size: 11px;
-  color: #9ca3af;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.acc-actions {
-  display: flex;
-  flex-direction: row;
+  align-items: stretch;
+  gap: 12px;
+  flex-wrap: wrap;
   justify-content: flex-end;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: nowrap; 
 }
 
-.btn {
+.fatv2-summary-item {
+  min-width: 125px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.fatv2-summary-item span {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 6px 10px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+}
+
+.fatv2-summary-item strong {
+  font-size: 15px;
+  color: #0f172a;
+}
+
+.fatv2-card-body {
+  padding: 20px 22px 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.fatv2-label {
+  display: inline-block;
+  margin-bottom: 10px;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #64748b;
+  font-weight: 700;
+}
+
+.fatv2-benefit-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.fatv2-tag {
+  display: inline-flex;
+  align-items: center;
   border-radius: 999px;
-  border: 1px solid #d1d5db;
+  background: #eff6ff;
+  color: #1d4ed8;
+  padding: 8px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.fatv2-docs {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fatv2-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #dbe2ea;
   background: #ffffff;
-  font-size: 12px;
-  font-weight: 500;
-  color: #111827;
+  color: #0f172a;
+  border-radius: 999px;
+  padding: 10px 14px;
+  font-size: 13px;
+  font-weight: 600;
   cursor: pointer;
-  white-space: nowrap; 
-  transition:
-    background-color 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.05s ease;
+  white-space: nowrap;
+  transition: 0.2s ease;
 }
 
-.btn svg {
-  width: 14px;
-  height: 14px;
+.fatv2-btn:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
 }
 
-.btn:hover {
-  background: #f3f4f6;
-  border-color: #9ca3af;
-}
-
-.btn:active {
-  transform: translateY(1px);
-}
-
-.btn.primary {
-  background: #3b82f6;
-  border-color: #2563eb;
+.fatv2-btn-primary {
+  background: #1d4ed8;
+  border-color: #1d4ed8;
   color: #ffffff;
 }
 
-.btn.primary:hover {
-  background: #2563eb;
-  border-color: #1d4ed8;
+.fatv2-btn-primary:hover {
+  background: #1e40af;
+  border-color: #1e40af;
 }
 
-.fat-empty {
-  margin-top: 16px;
-  padding: 18px 16px;
-  border-radius: 10px;
-  background: #f9fafb;
-  border: 1px dashed #d1d5db;
+.fatv2-empty {
+  padding: 22px 18px;
+  border: 1px dashed #cbd5e1;
+  border-radius: 16px;
+  background: #f8fafc;
+  color: #64748b;
   font-size: 14px;
-  color: #6b7280;
 }
 
-@media (max-width: 900px) {
-  .fat-row {
-    grid-template-columns: minmax(0, 1.7fr) minmax(0, 1fr);
-    grid-template-rows: auto auto;
+@media (max-width: 980px) {
+  .fatv2-card-top {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
-  .acc-actions {
-    justify-content: flex-start;
-    flex-wrap: wrap; 
-  }
-
-  .acc-main {
-    flex-wrap: wrap;
-    gap: 12px;
-  }
-}
-
-@media (max-width: 640px) {
-  .fat-toolbar {
-    padding: 12px 12px;
-  }
-
-  .filter-group {
-    min-width: 100%;
-  }
-
-  .fat-row {
-    grid-template-columns: minmax(0, 1fr);
-  }
-
-  .acc-actions {
+  .fatv2-summary {
     justify-content: flex-start;
   }
 }
 
-.acc-header {
-  position: relative;
-  padding-right: 46px; 
-}
+@media (max-width: 720px) {
+  .fatv2-page {
+    padding: 18px 16px 48px;
+  }
 
-.acc-arrow {
-  position: absolute;
-  right: 16px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  pointer-events: none; 
-}
+  .fatv2-hero {
+    padding: 20px;
+  }
 
-.acc-arrow .chevron {
-  width: 20px;
-  height: 20px;
-  opacity: 0.7;
-  display: block;
-  transition: transform 0.2s ease, opacity 0.2s ease;
-}
+  .fatv2-title {
+    font-size: 28px;
+  }
 
-.acc-header:hover .acc-arrow .chevron {
-  opacity: 1;
-}
+  .fatv2-docs {
+    flex-direction: column;
+    align-items: stretch;
+  }
 
-.chevron.open {
-  transform: rotate(180deg);
+  .fatv2-btn {
+    width: 100%;
+  }
+
+  .fatv2-main-text h2 {
+    font-size: 18px;
+  }
 }
