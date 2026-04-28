@@ -1,6 +1,7 @@
+const API_BASE_URL = 'http://localhost:8000/api'; //'https://vr-beneficios-backend-fedcorp-y5bg8.ondigitalocean.app/api'; 
+const ACCESS_TOKEN_KEY = 'accessToken';
 
-const API_BASE_URL = 'https://vr-beneficios-backend-fedcorp-y5bg8.ondigitalocean.app/api'; 
-const ACCESS_TOKEN_KEY = 'accessToken'; 
+export { API_BASE_URL, ACCESS_TOKEN_KEY }
 
 /**
  * Realiza uma requisição à API.
@@ -11,14 +12,14 @@ const ACCESS_TOKEN_KEY = 'accessToken';
 export const apiFetch = async (endpoint, options = {}) => {
     const url = `${API_BASE_URL}${endpoint}`;
     const token = localStorage.getItem(ACCESS_TOKEN_KEY);
-    
+
     const isFormData = options.body instanceof FormData;
 
-   
+
     let finalHeaders = {
-        ...options.headers, 
+        ...options.headers,
     };
-    
+
     if (token && !finalHeaders.Authorization) {
         finalHeaders['Authorization'] = `Bearer ${token}`;
     }
@@ -29,22 +30,22 @@ export const apiFetch = async (endpoint, options = {}) => {
 
     const finalOptions = {
         ...options,
-        headers: finalHeaders, 
+        headers: finalHeaders,
     };
     if (finalOptions.body && typeof finalOptions.body !== 'string' && !isFormData) {
         finalOptions.body = JSON.stringify(finalOptions.body);
     }
-    
+
     try {
         const response = await fetch(url, finalOptions);
 
         if (!response.ok) {
             let errorData = { detail: 'Erro desconhecido.' };
             try {
-                
-                errorData = await response.json(); 
+
+                errorData = await response.json();
             } catch (e) {
-               
+
                 errorData.detail = response.statusText || 'Erro de rede ou servidor.';
             }
 
@@ -56,7 +57,7 @@ export const apiFetch = async (endpoint, options = {}) => {
             return {};
         }
 
-        if (response.status === 401){
+        if (response.status === 401) {
             localStorage.removeItem(ACCESS_TOKEN_KEY);
             window.location.href = '/login/';
         }

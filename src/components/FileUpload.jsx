@@ -187,9 +187,9 @@ export default function FileUpload({ onUpload }) {
     const file = e.target.files?.[0]
     if (!file) return
 
-    if (!/\.(csv|txt|xlsx|xls)$/i.test(file.name)) {
+    if (!/\.(csv|txt|xlsx)$/i.test(file.name)) {
       setStatus('erro')
-      setMessage('Formato inválido. Selecione um arquivo .txt, .csv ou .xlsx')
+      setMessage('Formato inválido. Selecione um arquivo .txt ou .csv')
       setFileName('')
       return
     }
@@ -202,9 +202,9 @@ export default function FileUpload({ onUpload }) {
     const file = e.dataTransfer.files?.[0]
     if (!file) return
 
-    if (!/\.(csv|txt|xlsx|xls)$/i.test(file.name)) {
+    if (!/\.(csv|txt)$/i.test(file.name)) {
       setStatus('erro')
-      setMessage('Formato inválido. Selecione um arquivo .txt, .csv ou .xlsx')
+      setMessage('Formato inválido. Selecione um arquivo .txt ou .csv')
       setFileName('')
       return
     }
@@ -226,7 +226,7 @@ export default function FileUpload({ onUpload }) {
 
           <div>
             <h2 className="upload-title">Upload de Arquivo</h2>
-            <p className="upload-subtitle">Importe arquivos .txt, .csv ou .xlsx</p>
+            <p className="upload-subtitle">Importe arquivos .txt ou .csv</p>
           </div>
         </div>
 
@@ -248,7 +248,7 @@ export default function FileUpload({ onUpload }) {
         <input
           ref={inputRef}
           type="file"
-          accept=".txt,.csv,.xlsx,.xls"
+          accept=".txt,.csv., .xlsx"
           onChange={handleChange}
           hidden
         />
@@ -258,7 +258,7 @@ export default function FileUpload({ onUpload }) {
         </div>
 
         <p className="upload-text">Clique para selecionar ou arraste o arquivo aqui</p>
-        <p className="upload-formats">Formatos aceitos: .txt, .csv, .xlsx</p>
+        <p className="upload-formats">Formatos aceitos: .txt, .csv</p>
       </div>
 
       {status && (
