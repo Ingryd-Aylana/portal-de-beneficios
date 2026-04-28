@@ -43,6 +43,55 @@
     color: var(--sub);
 }
 
+.cf-page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 28px;
+    flex-wrap: wrap;
+    gap: 16px;
+}
+
+.cf-stats-mini {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.cf-stat-mini {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 10px 16px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 80px;
+    border-left: 3px solid var(--sub);
+}
+
+.cf-stat-mini-value {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.cf-stat-mini-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--sub);
+    margin-top: 2px;
+}
+
+.cf-stat-mini[style*="--mini-color"] {
+    border-left-color: var(--mini-color);
+}
+
+.cf-stat-mini[style*="--mini-color"] .cf-stat-mini-value {
+    color: var(--mini-color);
+}
+
 .cf-stats {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
@@ -305,6 +354,11 @@
 .cf-btn:disabled {
     opacity: .5;
     cursor: not-allowed;
+}
+
+.cf-btn-sm {
+    padding: 5px 10px;
+    font-size: 11px;
 }
 
 .cf-btn.primary {
@@ -645,4 +699,157 @@
     font-size: 12px;
     color: var(--sub);
     text-align: center;
+.cf-modal-details {
+    max-width: 700px;
+}
+
+.cf-details-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+    margin-bottom: 24px;
+}
+
+.cf-details-card {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+}
+
+.cf-details-label {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--sub);
+    margin-bottom: 6px;
+}
+
+.cf-details-value {
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.cf-value-green {
+    color: #16a34a;
+}
+
+.cf-timeline-section {
+    margin-bottom: 24px;
+}
+
+.cf-timeline-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 12px;
+    color: var(--text);
+}
+
+.cf-timeline {
+    display: flex;
+    justify-content: space-between;
+    position: relative;
+    padding: 0 8px;
+}
+
+.cf-timeline::before {
+    content: '';
+    position: absolute;
+    top: 8px;
+    left: 24px;
+    right: 24px;
+    height: 2px;
+    background: var(--border);
+}
+
+.cf-timeline-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    z-index: 1;
+}
+
+.cf-timeline-dot {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    margin-bottom: 8px;
+}
+
+.cf-timeline-done .cf-timeline-dot {
+    background: #16a34a;
+    border-color: #16a34a;
+}
+
+.cf-timeline-content {
+    text-align: center;
+}
+
+.cf-timeline-label {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--sub);
+}
+
+.cf-timeline-date {
+    font-size: 10px;
+    color: var(--sub);
+    margin-top: 2px;
+}
+
+.cf-timeline-done .cf-timeline-label {
+    color: var(--text);
+}
+
+.cf-import-info {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+}
+
+.cf-import-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 12px;
+}
+
+.cf-import-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.cf-import-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.cf-import-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    color: var(--sub);
+}
+
+.cf-import-value {
+    font-size: 12px;
+    font-weight: 500;
+}
+
+@media (max-width: 640px) {
+    .cf-details-grid {
+        grid-template-columns: 1fr;
+    }
+    .cf-import-grid {
+        grid-template-columns: 1fr;
+    }
+    .cf-stats-mini {
+        width: 100%;
+        justify-content: space-between;
+    }
 }

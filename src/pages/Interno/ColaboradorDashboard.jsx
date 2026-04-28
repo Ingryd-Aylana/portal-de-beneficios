@@ -46,6 +46,12 @@ const fmtDate = (s) => {
   return value
 }
 
+const fmtMoney = (value) =>
+  Number(value || 0).toLocaleString('pt-BR', {
+    style: 'currency',
+    currency: 'BRL',
+  })
+
 const norm = (s) =>
   (s || '')
     .toString()
@@ -150,6 +156,182 @@ const statusLabel = {
   failed: 'Falhou',
 }
 
+const getStatusClass = (status) => {
+  if (status === 'faturado') return 'faturado'
+  if (status === 'cancelado') return 'cancelado'
+  if (status === 'em_faturamento') return 'em_faturamento'
+  return 'aprovado'
+}
+
+const extrairResumoPedido = (pedidoApi) => {
+  const dadosReq = pedidoApi?.dadosRequisicao || pedidoApi?.dados_requisicao || {}
+
+  const movsDetalhadas = Array.isArray(dadosReq.movimentacoes_detalhada)
+    ? dadosReq.movimentacoes_detalhada
+    : []
+
+  const novos = dadosReq.novos_registros || {}
+  const funcionariosNovos = Array.isArray(novos.funcionarios) ? novos.funcionarios : []
+  const condominiosNovos = Array.isArray(novos.condominios) ? novos.condominios : []
+
+  const condominiosResumo = Array.isArray(dadosReq.condominios) ? dadosReq.condominios : []
+  const summary = dadosReq.summary || {}
+
+  const primeiroMov = movsDetalhadas[0] || {}
+  const primeiroCondominioNovo = condominiosNovos[0] || {}
+  const primeiroCondominioResumo = condominiosResumo[0] || {}
+
+  const usandoFormatoDetalhado = movsDetalhadas.length > 0
+  const usandoFormatoResumo = condominiosResumo.length > 0
+
+  let valorTotal = 0
+  let totalFuncionarios = 0
+  let nomeCondominio = '-'
+  let cnpj = '-'
+  let cidade = '-'
+  let uf = '-'
+  let dataVencimento = '-'
+  let quantidadeDias = '-'
+  let mesUtilizacao = '-'
+
+  if (usandoFormatoDetalhado) {
+    valorTotal = movsDetalhadas.reduce(
+      (acc, item) => acc + Number(item.valor_recarga_bene || 0),
+      0
+    )
+
+    const funcionariosUnicos = [
+      ...new Set(movsDetalhadas.map((m) => m.nome_func).filter(Boolean)),
+    ]
+
+    totalFuncionarios = funcionariosUnicos.length || funcionariosNovos.length
+
+    nomeCondominio =
+      primeiroCondominioNovo.razao_social ||
+      primeiroMov.departamento ||
+      primeiroMov.cnpj ||
+      '-'
+
+    cnpj = primeiroMov.cnpj || primeiroCondominioNovo.cnpj || '-'
+    cidade = primeiroMov.cidade || primeiroCondominioNovo.cidade || '-'
+    uf = primeiroMov.uf || primeiroCondominioNovo.uf || '-'
+
+    dataVencimento =
+      primeiroMov.vencimento ||
+      dadosReq.vencimento ||
+      '-'
+
+    quantidadeDias = Math.max(
+      ...movsDetalhadas.map((m) => Number(m.quantidade || 0)),
+      0
+    ) || '-'
+
+    const competenciaBruta =
+      primeiroMov.periodo2 ||
+      primeiroMov.periodos ||
+      dadosReq.competencia ||
+      dadosReq.vencimento ||
+      pedidoApi.processed_at
+
+    if (competenciaBruta) {
+      const data = new Date(competenciaBruta)
+      if (!Number.isNaN(data.getTime())) {
+        mesUtilizacao = data.toLocaleDateString('pt-BR', {
+          month: '2-digit',
+          year: 'numeric',
+        })
+      } else {
+        mesUtilizacao = fmtDate(competenciaBruta)
+      }
+    }
+  } else if (usandoFormatoResumo) {
+    console.log('DEBUG VENCIMENTO', {
+      id: pedidoApi.id,
+      vencimentoCondominio: primeiroCondominioResumo?.vencimento,
+      vencimentoFuncionario: primeiroCondominioResumo?.funcionarios?.[0]?.vencimento,
+      vencimentoMovimentacao: primeiroCondominioResumo?.funcionarios?.[0]?.movimentacoes?.[0]?.vencimento,
+      vencimentoSummary: summary?.vencimento,
+      vencimentoDadosReq: dadosReq?.vencimento,
+      primeiroCondominioResumo,
+    })
+    valorTotal =
+      condominiosResumo.reduce(
+        (acc, cond) => acc + Number(cond.valor_condo || 0),
+        0
+      ) || Number(summary.valor_total_beneficios || 0)
+
+    totalFuncionarios = condominiosResumo.reduce(
+      (acc, cond) => acc + (Array.isArray(cond.funcionarios) ? cond.funcionarios.length : 0),
+      0
+    )
+
+    nomeCondominio = primeiroCondominioResumo.nome || '-'
+    cnpj = primeiroCondominioResumo.cnpj || summary.primeiro_cnpj_processado || '-'
+
+    const vencimentoCondominio =
+      primeiroCondominioResumo?.vencimento
+
+    const vencimentoFuncionario =
+      primeiroCondominioResumo?.funcionarios?.[0]?.vencimento
+
+    const vencimentoMovimentacao =
+      primeiroCondominioResumo?.funcionarios?.[0]?.movimentacoes?.[0]?.vencimento
+
+    const vencimentoSummary =
+      summary?.vencimento
+
+    dataVencimento =
+      vencimentoCondominio ||
+      vencimentoFuncionario ||
+      vencimentoMovimentacao ||
+      vencimentoSummary ||
+      dadosReq.vencimento ||
+      '-'
+
+    quantidadeDias = '-'
+
+    const competenciaBruta =
+      summary.data_competencia_arquivo ||
+      dadosReq.competencia ||
+      pedidoApi.processed_at
+
+    if (competenciaBruta) {
+      const data = new Date(competenciaBruta)
+      if (!Number.isNaN(data.getTime())) {
+        mesUtilizacao = data.toLocaleDateString('pt-BR', {
+          month: '2-digit',
+          year: 'numeric',
+        })
+      } else {
+        mesUtilizacao = fmtDate(competenciaBruta)
+      }
+    }
+  }
+
+  return {
+    id: pedidoApi.id,
+    fileId: pedidoApi.file || dadosReq.file_upload_id || null,
+    status: pedidoApi.status || 'aprovado',
+    dataVencimento,
+    mesUtilizacao,
+    quantidadeDias,
+    aprovadoEm: pedidoApi.aprovadoEm || pedidoApi.aprovado_em || pedidoApi.processed_at || '-',
+    canceladoEm: pedidoApi.canceladoEm || pedidoApi.cancelado_em || null,
+    motivoCancelamento: pedidoApi.motivoCancelamento || pedidoApi.motivo_cancelamento || '',
+    documentosImportados:
+      pedidoApi.documentosImportados || pedidoApi.documentos_importados || [],
+    importadoEm: pedidoApi.importadoEm || pedidoApi.importado_em || pedidoApi.processed_at || null,
+    excelUrl: pedidoApi.excelUrl || pedidoApi.excel_url || null,
+    dadosRequisicao: dadosReq,
+    valorTotal,
+    nomeCondominio,
+    cnpj,
+    cidade,
+    uf,
+    totalFuncionarios,
+  }
+}
+
 export default function ColaboradorDashboard() {
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState('todos')
@@ -184,6 +366,9 @@ export default function ColaboradorDashboard() {
   const [cancelReason, setCancelReason] = useState('')
   const [cancelError, setCancelError] = useState('')
   const [cancelPedido, setCancelPedido] = useState(null)
+
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [detailsPedido, setDetailsPedido] = useState(null)
 
   const pushToast = ({
     type = 'info',
@@ -236,6 +421,11 @@ export default function ColaboradorDashboard() {
       }))
 
       console.log('FORMATADO:', pedidosFormatados)
+          : Array.isArray(response?.pedidos)
+            ? response.pedidos
+            : []
+
+      const pedidosFormatados = lista.map(extrairResumoPedido)
       setPedidos(pedidosFormatados)
     } catch (error) {
       console.error('Erro ao carregar pedidos:', error)
@@ -273,7 +463,18 @@ export default function ColaboradorDashboard() {
     const q = norm(search)
 
     return pedidos.filter((p) => {
-      const hay = norm(`${p.id} ${p.mesUtilizacao} ${p.dataVencimento}`)
+      const hay = norm(
+        [
+          p.id,
+          p.mesUtilizacao,
+          p.dataVencimento,
+          p.nomeCondominio,
+          p.cnpj,
+          p.cidade,
+          p.uf,
+        ].join(' ')
+      )
+
       return (
         (!q || hay.includes(q)) &&
         (statusFilter === 'todos' || p.status === statusFilter)
@@ -297,6 +498,8 @@ export default function ColaboradorDashboard() {
         type: 'info',
         title: 'Arquivo não disponível',
         message: 'Esta importação ainda não possui arquivo para download.',
+        title: 'Pedido cancelado',
+        message: 'Não é possível baixar o faturamento de um pedido cancelado.',
       })
       return
     }
@@ -320,6 +523,21 @@ export default function ColaboradorDashboard() {
         a.remove()
         URL.revokeObjectURL(url)
       }
+      setPedidos((prev) =>
+        prev.map((item) =>
+          item.id === pedido.id
+            ? { ...item, status: 'em_faturamento' }
+            : item
+        )
+      )
+
+      await faturamentoService.baixarExportFaturamento(
+        {
+          id: pedido.id,
+          file_upload_id: pedido.fileId,
+        },
+        `pedido-${pedido.id}.xlsx`
+      )
 
       pushToast({
         type: 'success',
@@ -341,6 +559,25 @@ export default function ColaboradorDashboard() {
   }
 
   function handleChangeStatus(pedido, newStatus) {
+    if (newStatus === 'cancelado') {
+      openCancelModal(pedido)
+      return
+    }
+
+    setPedidos((prev) =>
+      prev.map((item) =>
+        item.id === pedido.id
+          ? {
+            ...item,
+            status: newStatus,
+            ...(newStatus !== 'cancelado'
+              ? { motivoCancelamento: '', canceladoEm: null }
+              : {}),
+          }
+          : item
+      )
+    )
+
     pushToast({
       type: 'info',
       title: 'Status',
@@ -364,6 +601,8 @@ export default function ColaboradorDashboard() {
         type: 'info',
         title: 'Importação concluída',
         message: 'Esta importação já foi concluída.',
+        title: 'Importação bloqueada',
+        message: 'Este pedido está cancelado.',
         duration: 5000,
       })
       return
@@ -500,6 +739,20 @@ try {
       setUploadProgress(0)
       setUploadStatus('Enviando documentos...')
       setUploading(true)
+      setPedidos((prev) =>
+        prev.map((item) =>
+          item.id === selectedPedido.id
+            ? {
+              ...item,
+              status: response?.status,
+              documentosImportados: response?.documentosImportados || [],
+              importadoEm:
+                response?.importadoEm ||
+                new Date().toLocaleDateString('pt-BR'),
+            }
+            : item
+        )
+      )
 
       setConfirmFinalize({ open: false, title: '', message: '', onConfirm: null })
 
@@ -629,12 +882,17 @@ try {
 
       if (importOpen && !uploading) {
         closeImport()
+        return
+      }
+
+      if (detailsOpen) {
+        setDetailsOpen(false)
       }
     }
 
     window.addEventListener('keydown', fn)
     return () => window.removeEventListener('keydown', fn)
-  }, [importOpen, confirm.open, confirmFinalize.open, cancelOpen, uploading])
+  }, [importOpen, confirm.open, confirmFinalize.open, cancelOpen, uploading, detailsOpen])
 
   return (
     <div className="cf-root">
@@ -648,55 +906,21 @@ try {
           </div>
         </div>
 
-        <button
-          className="cf-btn"
-          onClick={() =>
-            pushToast({
-              type: 'info',
-              title: 'Dica',
-              message:
-                'Você pode alterar o status do pedido diretamente na coluna de status. Para cancelar, selecione a opção no dropdown.',
-              duration: 6500,
-            })
-          }
-        >
-          <Info size={14} /> Ajuda
-        </button>
-      </div>
-
-      {/*
-      <div className="cf-stats">
-        <div className="cf-stat" style={{ '--stat-color': '#111827' }}>
-          <div className="cf-stat-label">Total de pedidos</div>
-          <div className="cf-stat-value">{stats.total}</div>
-        </div>
-
-        <div className="cf-stat" style={{ '--stat-color': '#16a34a' }}>
-          <div className="cf-stat-label">Aprovados</div>
-          <div className="cf-stat-value">{stats.aprovados}</div>
-        </div>
-
-        <div className="cf-stat" style={{ '--stat-color': '#d97706' }}>
-          <div className="cf-stat-label">Em faturamento</div>
-          <div className="cf-stat-value">{stats.emFat}</div>
-        </div>
-
-        <div className="cf-stat" style={{ '--stat-color': '#7c3aed' }}>
-          <div className="cf-stat-label">Disponíveis p/ funcionário</div>
-          <div className="cf-stat-value">{stats.disponiveisFuncionario}</div>
-        </div>
-
-        <div className="cf-stat" style={{ '--stat-color': '#2563eb' }}>
-          <div className="cf-stat-label">Faturados</div>
-          <div className="cf-stat-value">{stats.faturados}</div>
-        </div>
-
-        <div className="cf-stat" style={{ '--stat-color': '#dc2626' }}>
-          <div className="cf-stat-label">Cancelados</div>
-          <div className="cf-stat-value">{stats.cancelados}</div>
+        <div className="cf-stats-mini">
+          <div className="cf-stat-mini" style={{ '--mini-color': '#16a34a' }}>
+            <span className="cf-stat-mini-value">{stats.aprovados}</span>
+            <span className="cf-stat-mini-label">Aprovados</span>
+          </div>
+          <div className="cf-stat-mini" style={{ '--mini-color': '#d97706' }}>
+            <span className="cf-stat-mini-value">{stats.emFat}</span>
+            <span className="cf-stat-mini-label">Em Faturamento</span>
+          </div>
+          <div className="cf-stat-mini" style={{ '--mini-color': '#3a49ed' }}>
+            <span className="cf-stat-mini-value">{stats.faturados}</span>
+            <span className="cf-stat-mini-label">Faturados</span>
+          </div>
         </div>
       </div>
-      */}
 
       <div className="cf-filters">
         <div className="cf-search">
@@ -704,7 +928,7 @@ try {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por pedido, mês de utilização..."
+            placeholder="Buscar por pedido, condomínio, CNPJ..."
           />
           {search && (
             <button className="cf-search-clear" onClick={() => setSearch('')}>
@@ -723,6 +947,11 @@ try {
           <option value="processing">Processando</option>
           <option value="completed">Concluídos</option>
           <option value="failed">Falhos</option>
+          <option value="aprovado">Aprovados</option>
+          <option value="em_faturamento">Em faturamento</option>
+
+          <option value="faturado">Faturados</option>
+          <option value="cancelado">Cancelados</option>
         </select>
       </div>
 
@@ -734,7 +963,11 @@ try {
               <th>Vencimento</th>
               <th>Mês de utilização</th>
               <th>Registros</th>
+              <th>Competência</th>
+              <th>Qtd. funcionários</th>
+              <th>Valor Total</th>
               <th>Status</th>
+              <th>Timeline</th>
               <th>Excel</th>
               <th>Documentos</th>
             </tr>
@@ -743,13 +976,13 @@ try {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} className="cf-empty">
+                <td colSpan={9} className="cf-empty">
                   Carregando pedidos...
                 </td>
               </tr>
             ) : filtered.length === 0 ? (
               <tr>
-                <td colSpan={7} className="cf-empty">
+                <td colSpan={9} className="cf-empty">
                   Nenhum pedido encontrado.
                 </td>
               </tr>
@@ -757,14 +990,13 @@ try {
               filtered.map((p) => (
                 <tr key={p.id}>
                   <td>
-                    <div className="cf-id-main">{p.id}</div>
-                    <div className="cf-id-sub">
-                      Aprovado em {fmtDate(p.aprovadoEm)}
-                    </div>
+                    <div className="cf-id-main">Pedido #{p.id}</div>
+
+
 
                     {p.importadoEm && (
                       <div className="cf-id-sub" style={{ marginTop: 4 }}>
-                        Importado em {fmtDate(p.importadoEm)}
+                        Processado: {fmtDate(p.importadoEm)}
                       </div>
                     )}
 
@@ -788,7 +1020,11 @@ try {
                   <td style={{ fontSize: 13 }}>{p.mesUtilizacao}</td>
 
                   <td style={{ fontFamily: 'var(--mono)', fontSize: 12 }}>
-                    {p.quantidadeDias}
+                    {p.totalFuncionarios}
+                  </td>
+
+                  <td style={{ fontWeight: 600, color: '#16a34a' }}>
+                    {fmtMoney(p.valorTotal)}
                   </td>
 
                   <td>
@@ -811,19 +1047,48 @@ try {
                         <span className="cf-status-arrow">▾</span>
                       </div>
                     )}
+                    <div className="cf-status-select">
+                      <select
+                        value={p.status}
+                        onChange={(e) => handleChangeStatus(p, e.target.value)}
+                      >
+                        <option value="aprovado">Aprovado</option>
+                        <option value="em_faturamento">Em faturamento</option>
+
+                        <option value="faturado">Faturado</option>
+                        <option value="cancelado">Cancelar</option>
+                      </select>
+                    </div>
+                  </td>
+
+                  <td>
+                    <button
+                      className="cf-btn cf-btn-sm"
+                      onClick={() => {
+                        setDetailsPedido(p)
+                        setDetailsOpen(true)
+                      }}
+                      title="Ver timeline"
+                    >
+                      <Info size={14} />
+                      Ver
+                    </button>
                   </td>
 
                   <td>
                     <button
                       className="cf-btn"
                       onClick={() => handleDownload(p)}
-                      disabled={downloadingId === p.id}
+                      disabled={downloadingId === p.id || p.status === 'cancelado'}
                       title={
                         p.status === 'failed'
                           ? 'Importação falhou'
                           : !p.excelUrl
                             ? 'Arquivo não disponível'
                             : 'Baixar arquivo'
+                        p.status === 'cancelado'
+                          ? 'Pedido cancelado'
+                          : 'Baixar faturamento'
                       }
                     >
                       <Download size={14} />
@@ -850,6 +1115,15 @@ try {
                       {p.status === 'completed'
                         ? 'Encerrado'
                         : 'Importar'}
+                      disabled={p.status === 'cancelado'}
+                      title={
+                        p.status === 'cancelado'
+                          ? 'Pedido cancelado'
+                          : 'Importar documentos'
+                      }
+                    >
+                      <FileSpreadsheet size={14} />
+                      Importar
                     </button>
                   </td>
                 </tr>
@@ -871,7 +1145,7 @@ try {
               <div>
                 <div className="cf-modal-title">Importar documentos</div>
                 <div className="cf-modal-sub">
-                  Pedido {selectedPedido.id} · {selectedPedido.mesUtilizacao}
+                  Pedido {selectedPedido.id} · {selectedPedido.nomeCondominio}
                 </div>
               </div>
 
@@ -894,20 +1168,18 @@ try {
                 </div>
 
                 <div className="cf-resumo-item">
-                  <div className="cf-resumo-label">Dias trabalhados</div>
-                  <div className="cf-resumo-val">
-                    {selectedPedido.quantidadeDias}
-                  </div>
+                  <div className="cf-resumo-label">Funcionários</div>
+                  <div className="cf-resumo-val">{selectedPedido.totalFuncionarios}</div>
                 </div>
 
                 <div className="cf-resumo-item">
                   <div className="cf-resumo-label">Status</div>
                   <span
-                    className={`cf-badge ${selectedPedido.status}`}
+                    className={`cf-badge ${getStatusClass(selectedPedido.status)}`}
                     style={{ marginTop: 2 }}
                   >
                     <span className="cf-badge-dot" />
-                    {statusLabel[selectedPedido.status]}
+                    {statusLabel[selectedPedido.status] || selectedPedido.status}
                   </span>
                 </div>
               </div>
@@ -1113,6 +1385,142 @@ try {
         confirmColor="#2563eb"
         loading={uploading}
       />
+
+      {detailsOpen && detailsPedido && (
+        <div
+          className="cf-overlay"
+          onMouseDown={(e) =>
+            e.target.classList.contains('cf-overlay') && setDetailsOpen(false)
+          }
+        >
+          <div className="cf-modal cf-modal-details" role="dialog" aria-modal="true">
+            <div className="cf-modal-header">
+              <div>
+                <div className="cf-modal-title">Detalhes do Pedido</div>
+                <div className="cf-modal-sub">
+                  {detailsPedido.id} · {detailsPedido.mesUtilizacao}
+                </div>
+              </div>
+
+              <button
+                className="cf-modal-close"
+                onClick={() => setDetailsOpen(false)}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="cf-modal-body">
+              <div className="cf-details-grid">
+                <div className="cf-details-card">
+                  <div className="cf-details-label">Valor Total</div>
+                  <div className="cf-details-value cf-value-green">
+                    {fmtMoney(detailsPedido.valorTotal)}
+                  </div>
+                </div>
+
+                <div className="cf-details-card">
+                  <div className="cf-details-label">Dias Trabalhados</div>
+                  <div className="cf-details-value">{detailsPedido.quantidadeDias}</div>
+                </div>
+
+                <div className="cf-details-card">
+                  <div className="cf-details-label">Vencimento</div>
+                  <div className="cf-details-value">
+                    {fmtDate(detailsPedido.dataVencimento)}
+                  </div>
+                </div>
+
+                <div className="cf-details-card">
+                  <div className="cf-details-label">Status</div>
+                  <div className="cf-details-value">
+                    <span className={`cf-badge ${getStatusClass(detailsPedido.status)}`}>
+                      <span className="cf-badge-dot" />
+                      {statusLabel[detailsPedido.status] || detailsPedido.status}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <div className="cf-timeline-section">
+                <div className="cf-timeline-title">Timeline</div>
+                <div className="cf-timeline">
+                  <div className="cf-timeline-item cf-timeline-done">
+                    <div className="cf-timeline-dot" />
+                    <div className="cf-timeline-content">
+                      <div className="cf-timeline-label">Importado</div>
+                      <div className="cf-timeline-date">
+                        {detailsPedido.importadoEm ? fmtDate(detailsPedido.importadoEm) : '-'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`cf-timeline-item ${['aprovado', 'em_faturamento', 'faturado'].includes(detailsPedido.status)
+                      ? 'cf-timeline-done'
+                      : ''
+                      }`}
+                  >
+                    <div className="cf-timeline-dot" />
+                    <div className="cf-timeline-content">
+                      <div className="cf-timeline-label">Aprovado</div>
+                      <div className="cf-timeline-date">
+                        {detailsPedido.aprovadoEm ? fmtDate(detailsPedido.aprovadoEm) : '-'}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`cf-timeline-item ${['em_faturamento', 'faturado'].includes(detailsPedido.status)
+                      ? 'cf-timeline-done'
+                      : ''
+                      }`}
+                  >
+                    <div className="cf-timeline-dot" />
+                    <div className="cf-timeline-content">
+                      <div className="cf-timeline-label">Em Faturamento</div>
+                      <div className="cf-timeline-date">-</div>
+                    </div>
+                  </div>
+
+                  <div
+                    className={`cf-timeline-item ${detailsPedido.status === 'faturado' ? 'cf-timeline-done' : ''
+                      }`}
+                  >
+                    <div className="cf-timeline-dot" />
+                    <div className="cf-timeline-content">
+                      <div className="cf-timeline-label">Faturado</div>
+                      <div className="cf-timeline-date">-</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="cf-import-info">
+                <div className="cf-import-title">Dados da Importação</div>
+                <div className="cf-import-grid">
+
+                  <div className="cf-import-item">
+                    <span className="cf-import-label">Competência</span>
+                    <span className="cf-import-value">{detailsPedido.mesUtilizacao}</span>
+                  </div>
+
+                  <div className="cf-import-item">
+                    <span className="cf-import-label">Funcionários</span>
+                    <span className="cf-import-value">{detailsPedido.totalFuncionarios}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="cf-modal-footer">
+              <button className="cf-btn secondary" onClick={() => setDetailsOpen(false)}>
+                Fechar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

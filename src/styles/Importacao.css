@@ -1053,3 +1053,16 @@ button {
     color: #6b7280;
     font-weight: 500;
 }
+
+.status-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.status-detail {
+  display: block;
+  font-size: 11px;
+  line-height: 1.3;
+  color: #b91c1c;
+}
