@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import PendenciasDoDiaModal from '../../components/PendenciasDoDiaModal'
 import { entebenService } from '../../services/entebenService'
 
-import '../../styles/dashboard.css'
+import '../../styles/Dashboard.css'
 
 const formatCurrency = (n) =>
   `R$ ${Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
@@ -548,7 +548,7 @@ export default function Dashboard() {
                   <strong>{getCondoEndereco(selectedCondo)}</strong>
                 </div>
 
-                 {selectedCondo.bairro && (
+                {selectedCondo.bairro && (
                   <div className="dbi-modal-info">
                     <span className="dbi-mini-label">Bairro</span>
                     <strong>{selectedCondo.bairro}</strong>
@@ -593,7 +593,7 @@ export default function Dashboard() {
                   </div>
                 )}
 
-               
+
               </div>
 
               <div className="dbi-modal-actions">
