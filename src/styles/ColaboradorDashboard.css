@@ -618,3 +618,31 @@
     line-height: 1.6;
     margin: 0;
 }
+
+.cf-progress-wrap {
+    margin-top: 16px;
+    padding: 12px;
+    background: var(--bg);
+    border-radius: 8px;
+}
+
+.cf-progress-bar {
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.cf-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent) 0%, var(--accent3) 100%);
+    border-radius: 4px;
+    transition: width 0.3s ease;
+}
+
+.cf-progress-text {
+    margin-top: 8px;
+    font-size: 12px;
+    color: var(--sub);
+    text-align: center;
+}

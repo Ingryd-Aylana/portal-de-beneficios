@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom'
 import PendenciasDoDiaModal from '../../components/PendenciasDoDiaModal'
 import { entebenService } from '../../services/entebenService'
 
-import '../../styles/dashboard.css'
+import '../../styles/Dashboard.css'
 
 const formatCurrency = (n) =>
   `R$ ${Number(n || 0).toLocaleString('pt-BR', { minimumFractionDigits: 2 })}`
@@ -296,7 +296,7 @@ export default function Dashboard() {
             <div className="db-action-arrow"><IcoArrow /></div>
           </button>
 
-           <button className="db-action-btn" onClick={() => navigate('/faturamento/repetir')}>
+          <button className="db-action-btn" onClick={() => navigate('/faturamento/repetir')}>
             <div className="db-action-icon"><IcoDollar /></div>
             <div>
               <div className="db-action-title">Repetir último faturamento</div>

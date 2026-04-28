@@ -1,6 +1,7 @@
-import React, { useState } from 'react'
-import { Search } from 'lucide-react'
-import { acordosFaturamento as seed } from '../../utils/fakeData.js'
+import React, { useState, useEffect } from 'react'
+import { Search, FileText } from 'lucide-react'
+import { apiFetch } from '../../services/api.js'
+import { faturamentoService } from '../../services/faturamentoService.js'
 import '../../styles/Faturamento.css'
 
 const Chevron = ({ open }) => (
@@ -71,35 +72,52 @@ const isEmFaturamento = (item) =>
   /faturamento/i.test((item.status || '').toString())
 
 export default function Faturamento() {
-  const [groups, setGroups] = useState(() => {
-    const map = new Map()
+  const [groups, setGroups] = useState([])
+  const [loading, setLoading] = useState(true)
 
-    seed.forEach((a, idx) => {
-      const nome = a.acordo || a.beneficio || '-'
-      const comp = a.competencia || a.referencia || a.periodo || '-'
-      const valorNum = Number(a.valor ?? a.total ?? 0)
-      const groupKey = comp || '-'
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const response = await apiFetch('/beneficios/importacoes/', { method: 'GET' })
+        const lista = Array.isArray(response) ? response : Array.isArray(response?.data) ? response.data : []
 
-      if (!map.has(groupKey)) {
-        map.set(groupKey, {
-          _key: groupKey,
-          comp: groupKey,
-          open: false,
-          registros: []
+        const map = new Map()
+        lista.forEach((a, idx) => {
+          const comp = a.vigencia_inicio
+            ? new Date(a.vigencia_inicio).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+            : a.vigencia_fim
+              ? new Date(a.vigencia_fim).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+              : '-'
+          const groupKey = comp
+
+          if (!map.has(groupKey)) {
+            map.set(groupKey, {
+              _key: groupKey,
+              comp: groupKey,
+              open: false,
+              registros: []
+            })
+          }
+
+          map.get(groupKey).registros.push({
+            id: a.id,
+            acordo: 'Vale Refeição',
+            competencia: comp,
+            valor: a.registros_processados || 0,
+            status: a.status?.toLowerCase() || 'pending',
+            _itemKey: `${a.id}-${idx}`
+          })
         })
+
+        setGroups(Array.from(map.values()))
+      } catch (err) {
+        console.error('Erro ao carregar:', err)
+      } finally {
+        setLoading(false)
       }
-
-      map.get(groupKey).registros.push({
-        ...a,
-        _itemKey: `${a.id}-${idx}`,
-        nome,
-        comp,
-        valorNum
-      })
-    })
-
-    return Array.from(map.values())
-  })
+    }
+    loadData()
+  }, [])
 
   const [search, setSearch] = useState('')
 
@@ -107,64 +125,6 @@ export default function Faturamento() {
     setGroups((prev) =>
       prev.map((g) => (g._key === _key ? { ...g, open: !g.open } : g))
     )
-
-  const gerarFaturaPDF = async (a) => {
-    await makePdf(
-      `${a.id}-fatura.pdf`,
-      'FATURA',
-      [
-        ['Acordo', a.nome],
-        ['ID', a.id],
-        ['Competência', a.comp],
-        [
-          'Valor (R$)',
-          a.valorNum.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
-        ],
-        ['Status', a.status || '-']
-      ]
-    )
-  }
-
-  const gerarBoletoPDF = async (a) => {
-    await makePdf(
-      `${a.id}-boleto.pdf`,
-      'BOLETO',
-      [
-        ['Beneficiário', a.nome],
-        ['Nosso Número', a.nossoNumero || `NN-${a.id}`],
-        ['Competência', a.comp],
-        [
-          'Valor (R$)',
-          a.valorNum.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
-        ],
-        ['Vencimento', a.vencimento || '-']
-      ]
-    )
-  }
-
-  const gerarNFPDF = async (a) => {
-    await makePdf(
-      `${a.id}-nota-fiscal.pdf`,
-      'NOTA FISCAL (DANFE - Resumo)',
-      [
-        ['Cliente', a.nome],
-        ['Chave de Acesso', a.chaveAcesso || `NFe-${a.id}`],
-        ['Competência', a.comp],
-        [
-          'Valor Total (R$)',
-          a.valorNum.toLocaleString('pt-BR', { minimumFractionDigits: 2 })
-        ],
-        ['Status', a.status || '-']
-      ]
-    )
-  }
-
-  const baixarTodos = async (a) => {
-    if (isEmFaturamento(a)) return
-    await gerarFaturaPDF(a)
-    await gerarBoletoPDF(a)
-    await gerarNFPDF(a)
-  }
 
   const searchLower = search.trim().toLowerCase()
 
@@ -174,11 +134,10 @@ export default function Faturamento() {
         ? group.registros
         : group.registros.filter((r) => {
           const text = [
-            r.nome,
+            r.acordo,
             r.id,
-            r.condominio,
             r.status,
-            r.comp
+            r.competencia
           ]
             .filter(Boolean)
             .join(' ')
@@ -190,41 +149,24 @@ export default function Faturamento() {
       if (!registrosFiltrados.length) return null
 
       const totalGroup = registrosFiltrados.reduce(
-        (sum, r) => sum + r.valorNum,
+        (sum, r) => sum + (r.valor || 0),
         0
       )
-
-      const statusSet = new Set(
-        registrosFiltrados
-          .map((r) => (r.status || '').toString().toLowerCase())
-          .filter(Boolean)
-      )
-
-      let groupStatusLabel = 'Sem status'
-      let groupStatusClass = 'badge-open'
-
-      if (statusSet.size === 1) {
-        const only = Array.from(statusSet)[0]
-        groupStatusLabel = registrosFiltrados[0].status || 'Sem status'
-        groupStatusClass = /fechado/.test(only) ? 'badge-closed' : 'badge-open'
-      } else if (statusSet.size > 1) {
-        groupStatusLabel = 'Misto'
-        groupStatusClass = 'badge-open'
-      }
 
       return {
         ...group,
         registrosFiltrados,
-        totalGroup,
-        groupStatusLabel,
-        groupStatusClass
+        totalGroup
       }
     })
     .filter(Boolean)
 
+  if (loading) {
+    return <div className="fat-page">Carregando...</div>
+  }
+
   return (
     <div className="fat-page">
-      {/* Barra de filtros */}
       <div className="fat-toolbar">
         <div className="filters-row">
           <div className="filter-group">
@@ -235,7 +177,7 @@ export default function Faturamento() {
               </span>
               <input
                 type="text"
-                placeholder="Busque por, benefício, competência..."
+                placeholder="Busque por benefício, competência..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
               />
@@ -254,83 +196,50 @@ export default function Faturamento() {
                     {(group.comp || '-').slice(0, 2).toUpperCase()}
                   </div>
                   <div className="acc-text">
-                    <div className="acc-title">Folha: {group.comp}</div>
+                    <div className="acc-title">Competência: {group.comp}</div>
                     <div className="acc-sub">
-                      {group.registrosFiltrados.length} Benefício(s)
+                      {group.registrosFiltrados.length} Registro(s)
                     </div>
                   </div>
+                  <div className="acc-col">
+                    <span className="muted">Total</span>
+                    <strong>{group.totalGroup}</strong>
+                  </div>
                 </div>
-
-                <div className="acc-col">
-                  <span className="muted">Valor total (R$)</span>
-                  <strong>
-                    {group.totalGroup.toLocaleString('pt-BR', {
-                      minimumFractionDigits: 2
-                    })}
-                  </strong>
-                </div>
-
-                <div className={'badge ' + group.groupStatusClass}>
-                  {group.groupStatusLabel}
-                </div>
-
                 <div className="acc-arrow">
                   <Chevron open={group.open} />
                 </div>
               </div>
             </button>
 
-
             {group.open && (
               <div className="acc-body">
                 {group.registrosFiltrados.map((item) => (
                   <div key={item._itemKey} className="fat-row">
                     <div className="fat-row-main">
-                      <div className="fat-row-title">{item.nome}</div>
+                      <div className="fat-row-title">{item.acordo}</div>
                       <div className="fat-row-sub">
                         <span>ID: {item.id}</span>
-                        {item.condominio && (
-                          <span> • {item.condominio}</span>
-                        )}
+                        <span> • {item.competencia}</span>
                       </div>
                     </div>
-
                     <div className="fat-row-col">
-                      <span className="muted">Valor (R$)</span>
-                      <strong>
-                        {item.valorNum.toLocaleString('pt-BR', {
-                          minimumFractionDigits: 2
-                        })}
-                      </strong>
+                      <span className="muted">Registros</span>
+                      <strong>{item.valor}</strong>
                     </div>
-
                     {!isEmFaturamento(item) && (
                       <div className="acc-actions">
-                        <button
-                          className="btn"
-                          onClick={() => gerarFaturaPDF(item)}
-                        >
-                          <Download /> Fatura (PDF)
+                        <button className="btn" onClick={() => faturamentoService.downloadFaturamento(item.id, 'todos')}>
+                          <Download /> Todos
                         </button>
-
-                        <button
-                          className="btn"
-                          onClick={() => gerarBoletoPDF(item)}
-                        >
-                          <Download /> Boleto (PDF)
+                        <button className="btn" onClick={() => faturamentoService.downloadFaturamento(item.id, 'boletos')}>
+                          <FileText size={14} /> Boletos
                         </button>
-
-                        <button
-                          className="btn"
-                          onClick={() => gerarNFPDF(item)}
-                        >
-                          <Download /> Nota Fiscal (PDF)
+                        <button className="btn" onClick={() => faturamentoService.downloadFaturamento(item.id, 'notas-debito')}>
+                          <FileText size={14} /> Notas Débito
                         </button>
-                        <button
-                          className="btn primary"
-                          onClick={() => baixarTodos(item)}
-                        >
-                          <Download /> Baixar todos (PDF)
+                        <button className="btn" onClick={() => faturamentoService.downloadFaturamento(item.id, 'notas-fiscais')}>
+                          <FileText size={14} /> Notas Fiscais
                         </button>
                       </div>
                     )}
@@ -343,7 +252,7 @@ export default function Faturamento() {
 
         {normalizedGroups.length === 0 && (
           <div className="fat-empty">
-            Nenhum registro encontrado para o filtro informado.
+            Nenhum registro encontrado.
           </div>
         )}
       </div>

@@ -144,10 +144,10 @@ function ConfirmModal({
 }
 
 const statusLabel = {
-  aprovado: 'Aprovado',
-  em_faturamento: 'Em faturamento',
-  faturado: 'Faturado',
-  cancelado: 'Cancelado',
+  pending: 'Pendente',
+  processing: 'Processando',
+  completed: 'Concluído',
+  failed: 'Falhou',
 }
 
 export default function ColaboradorDashboard() {
@@ -161,6 +161,8 @@ export default function ColaboradorDashboard() {
   const [selectedPedido, setSelectedPedido] = useState(null)
   const [docs, setDocs] = useState([])
   const [uploading, setUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
+  const [uploadStatus, setUploadStatus] = useState('')
   const fileRef = useRef(null)
 
   const [toasts, setToasts] = useState([])
@@ -204,31 +206,33 @@ export default function ColaboradorDashboard() {
     try {
       setLoading(true)
 
-      const response = await faturamentoService.listarPedidosFuncionario()
+      const response = await faturamentoService.listarImportacoes()
 
       const lista = Array.isArray(response)
         ? response
         : Array.isArray(response?.data)
-        ? response.data
-        : Array.isArray(response?.pedidos)
-        ? response.pedidos
-        : []
+          ? response.data
+          : Array.isArray(response?.results)
+            ? response.results
+            : []
 
       console.log('RAW API:', lista)
 
       const pedidosFormatados = lista.map((p) => ({
         id: p.id,
-        dataVencimento: p.dataVencimento || p.data_vencimento || '-',
-        mesUtilizacao: p.mesUtilizacao || p.mes_utilizacao || '-',
-        quantidadeDias: p.quantidadeDias || p.quantidade_dias || '-',
-        aprovadoEm: p.aprovadoEm || p.aprovado_em || p.processed_at || '-',
-        canceladoEm: p.canceladoEm || p.cancelado_em || null,
-        motivoCancelamento: p.motivoCancelamento || p.motivo_cancelamento || '',
-        documentosImportados:
-          p.documentosImportados || p.documentos_importados || [],
-        importadoEm: p.importadoEm || p.importado_em || p.processed_at || null,
-        excelUrl: p.excelUrl || p.excel_url || null,
-        dadosRequisicao: p.dadosRequisicao || p.dados_requisicao || null,
+        dataVencimento: p.data_vencimento || p.dataVencimento || '-',
+        mesUtilizacao: p.vigencia_inicio
+          ? new Date(p.vigencia_inicio).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })
+          : p.mesUtilizacao || '-',
+        quantidadeDias: p.total_registros || p.registros_processados || '-',
+        status: p.status?.toLowerCase() || 'pending',
+        aprovadoEm: p.data_importacao || p.aprovadoEm || '-',
+        canceladoEm: null,
+        motivoCancelamento: '',
+        documentosImportados: [],
+        importadoEm: p.data_importacao || null,
+        excelUrl: p.url || null,
+        dadosRequisicao: p,
       }))
 
       console.log('FORMATADO:', pedidosFormatados)
@@ -239,7 +243,7 @@ export default function ColaboradorDashboard() {
       pushToast({
         type: 'error',
         title: 'Erro ao carregar',
-        message: 'Não foi possível carregar os pedidos do dashboard.',
+        message: 'Não foi possível carregar as importações do dashboard.',
         duration: 5000,
       })
 
@@ -258,7 +262,7 @@ export default function ColaboradorDashboard() {
       total: pedidos.length,
       aprovados: pedidos.filter((p) => p.status === 'aprovado').length,
       emFat: pedidos.filter((p) => p.status === 'em_faturamento').length,
-      
+
       faturados: pedidos.filter((p) => p.status === 'faturado').length,
       cancelados: pedidos.filter((p) => p.status === 'cancelado').length,
     }),
@@ -278,36 +282,27 @@ export default function ColaboradorDashboard() {
   }, [pedidos, search, statusFilter])
 
   async function handleDownload(pedido) {
-    if (pedido.status === 'cancelado') {
+    if (pedido.status === 'failed') {
       pushToast({
         type: 'warning',
-        title: 'Pedido cancelado',
+        title: 'Importação falhou',
         message:
-          'Não é possível baixar o faturamento de um pedido cancelado.',
+          'Não é possível baixar o arquivo de uma importação que falhou.',
       })
       return
     }
 
-    if (pedido.status === 'faturado') {
+    if (!pedido.excelUrl) {
       pushToast({
         type: 'info',
-        title: 'Pedido já faturado',
-        message:
-          'Este pedido já foi concluído e não pode voltar para faturamento.',
+        title: 'Arquivo não disponível',
+        message: 'Esta importação ainda não possui arquivo para download.',
       })
       return
     }
 
     try {
       setDownloadingId(pedido.id)
-
-      setPedidos((prev) =>
-        prev.map((item) =>
-          item.id === pedido.id
-            ? { ...item, status: 'em_faturamento' }
-            : item
-        )
-      )
 
       if (pedido.excelUrl) {
         const res = await fetch(pedido.excelUrl)
@@ -324,12 +319,6 @@ export default function ColaboradorDashboard() {
         a.click()
         a.remove()
         URL.revokeObjectURL(url)
-      } else {
-        pushToast({
-          type: 'info',
-          title: 'Sem planilha disponível',
-          message: 'Este pedido ainda não possui arquivo Excel para download.',
-        })
       }
 
       pushToast({
@@ -352,60 +341,29 @@ export default function ColaboradorDashboard() {
   }
 
   function handleChangeStatus(pedido, newStatus) {
-    if (pedido.status === 'faturado') return
-
-    if (newStatus === 'cancelado') {
-      openCancelModal(pedido)
-      return
-    }
-
-    setPedidos((prev) =>
-      prev.map((item) =>
-        item.id === pedido.id
-          ? {
-              ...item,
-              status: newStatus,
-              ...(newStatus !== 'cancelado'
-                ? { motivoCancelamento: '', canceladoEm: null }
-                : {}),
-            }
-          : item
-      )
-    )
-
     pushToast({
       type: 'info',
-      title: 'Status atualizado',
-      message: `Pedido ${pedido.id} alterado para "${statusLabel[newStatus]}".`,
+      title: 'Status',
+      message: 'O status é atualizado automaticamente pelo servidor.',
     })
   }
 
   function openImport(pedido) {
-    if (pedido.status === 'aprovado') {
+    if (pedido.status === 'failed') {
       pushToast({
         type: 'warning',
-        title: 'Faturamento não iniciado',
-        message: 'Baixe o faturamento antes de importar documentos.',
+        title: 'Importação falhou',
+        message: 'Não é possível importar documentos de uma importação que falhou.',
         duration: 5000,
       })
       return
     }
 
-    if (pedido.status === 'cancelado') {
+    if (pedido.status === 'completed') {
       pushToast({
         type: 'info',
-        title: 'Importação bloqueada',
-        message: 'Este pedido está cancelado.',
-        duration: 5000,
-      })
-      return
-    }
-
-    if (pedido.status === 'faturado') {
-      pushToast({
-        type: 'info',
-        title: 'Importação bloqueada',
-        message: 'Este pedido já foi faturado e não permite novos documentos.',
+        title: 'Importação concluída',
+        message: 'Esta importação já foi concluída.',
         duration: 5000,
       })
       return
@@ -519,43 +477,71 @@ export default function ColaboradorDashboard() {
       return
     }
 
-    try {
+    let arquivoBoleto = null
+    let arquivoNotaDebito = null
+    let arquivoNotaFiscal = null
+
+    for (const file of docs) {
+      const name = file.name.toUpperCase()
+      if (name.includes('RECIBOQ') || name.includes('BOLETO')) {
+        arquivoBoleto = file
+      } else if (name.includes('DEBITO')) {
+        arquivoNotaDebito = file
+      } else if (name.includes('NF')) {
+        arquivoNotaFiscal = file
+      }
+    }
+
+    const competencia = selectedPedido.dataVencimento
+      ? new Date(selectedPedido.dataVencimento.split('/').reverse().join('-')).toISOString().split('T')[0]
+      : new Date().toISOString().split('T')[0]
+
+try {
+      setUploadProgress(0)
+      setUploadStatus('Enviando documentos...')
       setUploading(true)
 
-      const response = await faturamentoService.importarDocumentos(
-        selectedPedido.id,
-        docs
-      )
+      setConfirmFinalize({ open: false, title: '', message: '', onConfirm: null })
 
-      setPedidos((prev) =>
-        prev.map((item) =>
-          item.id === selectedPedido.id
-            ? {
-                ...item,
-                documentosImportados: response?.documentosImportados || [],
-                importadoEm:
-                  response?.importadoEm ||
-                  new Date().toLocaleDateString('pt-BR'),
-              }
-            : item
-        )
-      )
-
-      pushToast({
-        type: 'success',
-        title: 'Upload concluído',
-        message: `Documentos enviados para ${selectedPedido.id}.`,
+      const response = await faturamentoService.importarDocumentos({
+        importacaoId: selectedPedido.id,
+        competencia,
+        arquivoBoleto,
+        arquivoNotaDebito,
+        arquivoNotaFiscal,
       })
 
-      setConfirmFinalize({
-        open: false,
-        title: '',
-        message: '',
-        onConfirm: null,
-      })
+      const faturamentoId = response?.faturamento_id || selectedPedido.id
 
-      closeImport()
-      await carregarPedidos()
+      setUploadStatus('Processando...')
+
+      try {
+        await faturamentoService.verificarProgresso(faturamentoId, (statusData) => {
+          if (statusData.progresso !== undefined) {
+            setUploadProgress(statusData.progresso)
+            setUploadStatus(statusData.status)
+          }
+
+          if (statusData.status === 'COMPLETED') {
+            setUploadProgress(100)
+            setUploadStatus('Concluído!')
+          }
+
+          if (statusData.status === 'FAILED') {
+            setUploadStatus('Falhou')
+          }
+        })
+      } catch (progressError) {
+        console.error('Erro no progresso:', progressError)
+        setUploadStatus('Erro ao monitorar')
+      }
+
+      setImportOpen(false)
+      setSelectedPedido(null)
+      setDocs([])
+      setUploadProgress(0)
+      setUploadStatus('')
+      setUploading(false)
     } catch (error) {
       console.error('Erro ao importar:', error)
 
@@ -598,11 +584,11 @@ export default function ColaboradorDashboard() {
       prev.map((item) =>
         item.id === cancelPedido?.id
           ? {
-              ...item,
-              status: 'cancelado',
-              motivoCancelamento: motivo,
-              canceladoEm: new Date().toLocaleDateString('pt-BR'),
-            }
+            ...item,
+            status: 'cancelado',
+            motivoCancelamento: motivo,
+            canceladoEm: new Date().toLocaleDateString('pt-BR'),
+          }
           : item
       )
     )
@@ -733,11 +719,10 @@ export default function ColaboradorDashboard() {
           onChange={(e) => setStatusFilter(e.target.value)}
         >
           <option value="todos">Todos os status</option>
-          <option value="aprovado">Aprovados</option>
-          <option value="em_faturamento">Em faturamento</option>
-          
-          <option value="faturado">Faturados</option>
-          <option value="cancelado">Cancelados</option>
+          <option value="pending">Pendentes</option>
+          <option value="processing">Processando</option>
+          <option value="completed">Concluídos</option>
+          <option value="failed">Falhos</option>
         </select>
       </div>
 
@@ -748,7 +733,7 @@ export default function ColaboradorDashboard() {
               <th>Pedido</th>
               <th>Vencimento</th>
               <th>Mês de utilização</th>
-              <th>Dias</th>
+              <th>Registros</th>
               <th>Status</th>
               <th>Excel</th>
               <th>Documentos</th>
@@ -807,20 +792,21 @@ export default function ColaboradorDashboard() {
                   </td>
 
                   <td>
-                    {p.status === 'faturado'  (
+                    {p.status === 'completed' ? (
                       <span className={`cf-badge ${p.status}`}>
                         <span className="cf-badge-dot" />
                         {statusLabel[p.status]}
                       </span>
-                    )  (
+                    ) : (
                       <div className="cf-status-select">
                         <select
                           value={p.status}
                           onChange={(e) => handleChangeStatus(p, e.target.value)}
                         >
-                          <option value="aprovado">Aprovado</option>
-                          <option value="em_faturamento">Em faturamento</option>
-                          <option value="cancelado">Cancelar</option>
+                          <option value="pending">Pendente</option>
+                          <option value="processing">Processando</option>
+                          <option value="completed">Concluído</option>
+                          <option value="failed">Falhou</option>
                         </select>
                         <span className="cf-status-arrow">▾</span>
                       </div>
@@ -833,11 +819,11 @@ export default function ColaboradorDashboard() {
                       onClick={() => handleDownload(p)}
                       disabled={downloadingId === p.id}
                       title={
-                        p.status === 'cancelado'
-                          ? 'Pedido cancelado'
-                          : p.status === 'faturado'
-                          ? 'Pedido já faturado'
-                          : 'Baixar faturamento'
+                        p.status === 'failed'
+                          ? 'Importação falhou'
+                          : !p.excelUrl
+                            ? 'Arquivo não disponível'
+                            : 'Baixar arquivo'
                       }
                     >
                       <Download size={14} />
@@ -850,18 +836,18 @@ export default function ColaboradorDashboard() {
                       className="cf-btn"
                       onClick={() => openImport(p)}
                       disabled={
-                        p.status === 'faturado' 
+                        p.status === 'completed' || p.status === 'failed'
                       }
                       title={
-                        p.status === 'faturado'
-                          ? 'Pedido já faturado. Importação encerrada.'
-                          : p.status === 'disponivel_para_funcionario'
-                          ? 'Documentos já importados e disponíveis para o funcionário.'
-                          : 'Importar documentos'
+                        p.status === 'completed'
+                          ? 'Importação concluída.'
+                          : p.status === 'failed'
+                            ? 'Importação falhou.'
+                            : 'Importar documentos'
                       }
                     >
                       <FileSpreadsheet size={14} />
-                      { p.status === 'faturado'
+                      {p.status === 'completed'
                         ? 'Encerrado'
                         : 'Importar'}
                     </button>
@@ -995,6 +981,20 @@ export default function ColaboradorDashboard() {
                   </div>
                 )}
               </div>
+
+              {uploading && (
+                <div className="cf-progress-wrap">
+                  <div className="cf-progress-bar">
+                    <div 
+                      className="cf-progress-fill" 
+                      style={{ width: `${uploadProgress}%` }}
+                    />
+                  </div>
+                  <div className="cf-progress-text">
+                    {uploadStatus} {uploadProgress}%
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="cf-modal-footer">
@@ -1012,7 +1012,7 @@ export default function ColaboradorDashboard() {
                 disabled={!docs.length || uploading}
               >
                 <Upload size={14} />
-                {uploading ? 'Enviando...' : 'Enviar documentos'}
+                {uploading ? `${uploadProgress}% - Enviando...` : 'Enviar documentos'}
               </button>
             </div>
           </div>

@@ -1,6 +1,6 @@
-import React, { useMemo, useState } from 'react'
+import React, { useMemo, useState, useEffect } from 'react'
 import DataTable from '../../components/DataTable.jsx'
-import { historico as base } from '../../utils/fakeData.js'
+import { apiFetch } from '../../services/api.js'
 import '../../styles/Historico.css'
 
 export default function Historico() {
@@ -9,6 +9,28 @@ export default function Historico() {
   const [tipo, setTipo] = useState('')
   const [status, setStatus] = useState('') 
   const [q, setQ] = useState('')
+  const [base, setBase] = useState([])
+
+  useEffect(() => {
+    async function loadData() {
+      try {
+        const response = await apiFetch('/beneficios/importacoes/', { method: 'GET' })
+        const lista = Array.isArray(response) ? response : Array.isArray(response?.data) ? response.data : []
+        
+        const formatted = lista.map(i => ({
+          id: i.id,
+          tipo: 'Importação',
+          referencia: `IMP-${i.id}`,
+          data: i.data_importacao ? new Date(i.data_importacao).toLocaleDateString('pt-BR') : '-',
+          status: i.status?.toLowerCase() || 'pending'
+        }))
+        setBase(formatted)
+      } catch (err) {
+        console.error('Erro ao carregar:', err)
+      }
+    }
+    loadData()
+  }, [])
 
   const itens = useMemo(() => {
     let data = base.slice()
