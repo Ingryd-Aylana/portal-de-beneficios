@@ -506,19 +506,19 @@ export default function Dashboard() {
                   </div>
                 </button>
 
-                <button className="dbi-quick-btn" onClick={() => navigate('/pendentes')}>
+                {/* <button className="dbi-quick-btn" onClick={() => navigate('/pendentes')}>
                   <IconWrap><IcoCalendar /></IconWrap>
                   <div>
                     <strong>Ver pendências</strong>
                     <span>Acompanhe vencimentos</span>
                   </div>
-                </button>
+                </button> */}
               </div>
             </div>
           </div>
         </section>
 
-        <section className="dbi-panel">
+        {/* <section className="dbi-panel">
           <div className="dbi-panel-head">
             <div>
               <p className="dbi-panel-eyebrow">Financeiro</p>
@@ -574,7 +574,7 @@ export default function Dashboard() {
               </table>
             </div>
           )}
-        </section>
+        </section> */}
       </main>
 
       {condoModalOpen && selectedCondo && (

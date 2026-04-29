@@ -106,4 +106,16 @@ export const entebenService = {
     throw error
   }
 },
+
+getFaturamentoStatus: async (id) => {
+  return apiFetch(`/upload/faturamento/${id}/status/`, {
+    method: 'GET',
+  })
+},
+
+exportarFaturamento: async () => {
+  return apiFetch('/upload/export/faturamento/', {
+    method: 'GET',
+  })
+},
 }

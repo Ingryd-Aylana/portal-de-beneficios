@@ -53,16 +53,6 @@ function getCpf(row) {
   return String(row?.cpf || row?.cpf_func || row?.cpf_funcionario || row?.CPF || '').trim()
 }
 
-function getCep(row) {
-  return String(
-    row?.cep ||
-      row?.CEP ||
-      row?.cep_condominio ||
-      row?.cep_funcionario ||
-      row?.codigo_postal ||
-      ''
-  ).trim()
-}
 
 function getRowKey(row) {
   const cpf = getCpf(row)
@@ -116,10 +106,6 @@ function isValidCPF(value) {
   return remainder === Number(cpf[10])
 }
 
-function isValidCEP(value) {
-  const cep = onlyDigits(value)
-  return cep.length === 8
-}
 
 function getNomeProduto(item) {
   return (
@@ -249,7 +235,6 @@ function getRowValidation(row) {
   const nome = getNomeColaborador(row)
   const condominio = getCondominio(row)
   const cpf = getCpf(row)
-  const cep = getCep(row)
   const valor = getValorRow(row)
 
   if (!normalizeText(nome)) {
@@ -264,12 +249,6 @@ function getRowValidation(row) {
     erros.push('CPF não informado')
   } else if (!isValidCPF(cpf)) {
     erros.push('CPF inválido')
-  }
-
-  if (!cep) {
-    erros.push('CEP não informado')
-  } else if (!isValidCEP(cep)) {
-    erros.push('CEP inválido')
   }
 
   if (Number(valor) <= 0) {
@@ -513,7 +492,7 @@ export default function Importacao() {
         response?.detail ||
         response?.message ||
         response?.error ||
-        'Nenhum registro válido foi encontrado no arquivo. Verifique CPF, CEP e demais campos obrigatórios.'
+        'Nenhum registro válido foi encontrado no arquivo. Verifique CPF e demais campos obrigatórios.'
 
       if (Array.isArray(errosImportacao) && errosImportacao.length > 0) {
         const primeiroErro =
