@@ -1,12 +1,26 @@
-import React, { useState, useRef, useMemo } from 'react'
+import React, { useEffect, useMemo, useRef, useState } from 'react'
 import {
-  Building2, Plus, Upload, Download, Save, X,
-  CheckCircle, AlertCircle, FileSpreadsheet, Users, MapPin, Phone, Trash2, Search
+  Building2,
+  Plus,
+  Upload,
+  Download,
+  Save,
+  X,
+  CheckCircle,
+  AlertCircle,
+  FileSpreadsheet,
+  Users,
+  MapPin,
+  Trash2,
+  Search,
 } from 'lucide-react'
+
+import { entebenService } from '../../services/entebenService'
 import '../../styles/Configuracao.css'
 
 async function ensureXLSX() {
   if (window.XLSX) return window.XLSX
+
   await new Promise((resolve, reject) => {
     const s = document.createElement('script')
     s.src = 'https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js'
@@ -14,8 +28,83 @@ async function ensureXLSX() {
     s.onerror = reject
     document.head.appendChild(s)
   })
+
   return window.XLSX
 }
+
+const toArray = (value) => {
+  if (Array.isArray(value)) return value
+  if (Array.isArray(value?.results)) return value.results
+  if (Array.isArray(value?.data)) return value.data
+  return []
+}
+
+const somenteDigitos = (value) => String(value || '').replace(/\D/g, '')
+
+const normalizarTexto = (value) =>
+  String(value || '')
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .trim()
+
+const normalizarCondominio = (cond) => ({
+  id: cond?.id,
+
+  nome:
+    cond?.nome ||
+    cond?.condominio ||
+    cond?.razao_social ||
+    cond?.fantasia ||
+    cond?.nome_condominio ||
+    `Condomínio #${cond?.id}`,
+
+  cnpj:
+    cond?.cnpj ||
+    cond?.cnpj_condominio ||
+    cond?.documento ||
+    cond?.cgc ||
+    '',
+
+  endereco:
+    cond?.endereco ||
+    cond?.logradouro ||
+    cond?.endereco_completo ||
+    [cond?.rua, cond?.numero, cond?.bairro].filter(Boolean).join(', '),
+
+  bairro: cond?.bairro || '',
+  cidade: cond?.cidade || '',
+  estado: cond?.estado || cond?.uf || '',
+  cep: cond?.cep || '',
+  telefone: cond?.telefone || cond?.contato || '',
+  email: cond?.email || '',
+
+  responsavel:
+    cond?.responsavel ||
+    cond?.sindico ||
+    cond?.gerente ||
+    cond?.administradora_nome ||
+    '',
+
+  qtdFuncionarios:
+    cond?.qtdFuncionarios ??
+    cond?.quantidade_funcionarios ??
+    cond?.total_funcionarios ??
+    cond?.qtd_funcionarios ??
+    cond?.funcionarios_count ??
+    cond?.total_colaboradores ??
+    cond?.quantidade_colaboradores ??
+    cond?.colaboradores_count ??
+    cond?.total_beneficiarios ??
+    cond?.quantidade_beneficiarios ??
+    cond?.beneficiarios_count ??
+    cond?.funcionarios?.length ??
+    cond?.colaboradores?.length ??
+    cond?.beneficiarios?.length ??
+    0,
+
+  ativo: cond?.ativo ?? cond?.is_active ?? cond?.status !== 'Inativo',
+})
 
 function FiltroCondominios({ value, onChange, onClear }) {
   return (
@@ -28,12 +117,9 @@ function FiltroCondominios({ value, onChange, onClear }) {
           value={value}
           onChange={(e) => onChange(e.target.value)}
         />
+
         {value && (
-          <button
-            type="button"
-            className="cfg-filter-clear"
-            onClick={onClear}
-          >
+          <button type="button" className="cfg-filter-clear" onClick={onClear}>
             <X className="ico" />
           </button>
         )}
@@ -44,87 +130,192 @@ function FiltroCondominios({ value, onChange, onClear }) {
 
 export default function ConfiguracaoCondominios() {
   const [modoAtivo, setModoAtivo] = useState('lista')
-  const [condominios, setCondominios] = useState([
-    {
-      id: 1, nome: 'Condomínio Sol Nascente', cnpj: '12.345.678/0001-90',
-      endereco: 'Rua das Flores, 123', bairro: 'Centro', cidade: 'Rio de Janeiro',
-      estado: 'RJ', cep: '20000-000', telefone: '(21) 3333-4444',
-      email: 'contato@solnascente.com.br', responsavel: 'João Silva',
-      qtdFuncionarios: 45, ativo: true
-    },
-    {
-      id: 2, nome: 'Residencial Ipanema', cnpj: '98.765.432/0001-10',
-      endereco: 'Av. Atlântica, 456', bairro: 'Ipanema', cidade: 'Rio de Janeiro',
-      estado: 'RJ', cep: '22000-000', telefone: '(21) 2222-3333',
-      email: 'admin@residencialipanema.com.br', responsavel: 'Maria Santos',
-      qtdFuncionarios: 32, ativo: true
-    }
-  ])
+  const [condominios, setCondominios] = useState([])
+  const [loadingCondominios, setLoadingCondominios] = useState(true)
+  const [erroCondominios, setErroCondominios] = useState('')
 
   const [formData, setFormData] = useState({
-    nome: '', cnpj: '', endereco: '', bairro: '', cidade: '', estado: '',
-    cep: '', telefone: '', email: '', responsavel: '', qtdFuncionarios: '',
-    ativo: true
+    nome: '',
+    cnpj: '',
+    endereco: '',
+    bairro: '',
+    cidade: '',
+    estado: '',
+    cep: '',
+    telefone: '',
+    email: '',
+    responsavel: '',
+    qtdFuncionarios: '',
+    ativo: true,
   })
 
   const [editandoId, setEditandoId] = useState(null)
   const [uploadStatus, setUploadStatus] = useState(null)
   const [uploadedFile, setUploadedFile] = useState(null)
   const [errosUpload, setErrosUpload] = useState([])
-
   const [confirm, setConfirm] = useState({ open: false, id: null, nome: '' })
-
   const [toast, setToast] = useState({ open: false, message: '', type: 'success' })
+  const [busca, setBusca] = useState('')
+
   const toastTimer = useRef(null)
+
+  useEffect(() => {
+    carregarCondominios()
+  }, [])
+
+  async function carregarCondominios() {
+    try {
+      setLoadingCondominios(true)
+      setErroCondominios('')
+
+      const [condominiosData, funcionariosData] = await Promise.all([
+        entebenService.getcondominios(),
+        entebenService.getFuncionarios(),
+      ])
+
+      const condominiosRaw = toArray(condominiosData)
+      const funcionariosRaw = toArray(funcionariosData)
+
+        const funcionariosPorCondominio = funcionariosRaw.reduce((acc, funcionario) => {
+        const condId =
+          funcionario?.condominio_id ||
+          funcionario?.condominio?.id ||
+          (typeof funcionario?.condominio === 'number' ||
+            typeof funcionario?.condominio === 'string'
+            ? funcionario.condominio
+            : null)
+
+        const cnpj =
+          somenteDigitos(funcionario?.condominio_cnpj) ||
+          somenteDigitos(funcionario?.cnpj_condominio) ||
+          somenteDigitos(funcionario?.condominio?.cnpj) ||
+          somenteDigitos(funcionario?.condominio?.documento) ||
+          somenteDigitos(funcionario?.cnpj)
+
+        const nome =
+          funcionario?.condominio_nome ||
+          funcionario?.nome_condominio ||
+          funcionario?.condominio?.nome ||
+          funcionario?.condominio?.razao_social ||
+          ''
+
+        const chaveId = condId ? String(condId) : ''
+        const chaveCnpj = cnpj
+        const chaveNome = normalizarTexto(nome)
+
+        if (chaveId) acc[chaveId] = (acc[chaveId] || 0) + 1
+        if (chaveCnpj) acc[chaveCnpj] = (acc[chaveCnpj] || 0) + 1
+        if (chaveNome) acc[chaveNome] = (acc[chaveNome] || 0) + 1
+
+        return acc
+      }, {})
+
+      const lista = condominiosRaw.map((condominio) => {
+        const condNormalizado = normalizarCondominio(condominio)
+
+        const chaveId = String(condNormalizado.id || '')
+        const chaveCnpj = somenteDigitos(condNormalizado.cnpj)
+        const chaveNome = normalizarTexto(condNormalizado.nome)
+
+        return {
+          ...condNormalizado,
+          qtdFuncionarios:
+            funcionariosPorCondominio[chaveId] ||
+            funcionariosPorCondominio[chaveCnpj] ||
+            funcionariosPorCondominio[chaveNome] ||
+            condNormalizado.qtdFuncionarios ||
+            0,
+        }
+      })
+
+      setCondominios(lista)
+    } catch (err) {
+      console.error('Erro ao carregar condomínios:', err)
+      setErroCondominios('Não foi possível carregar os condomínios cadastrados.')
+    } finally {
+      setLoadingCondominios(false)
+    }
+  }
+
   const showToast = (message, type = 'success') => {
     setToast({ open: true, message, type })
+
     if (toastTimer.current) clearTimeout(toastTimer.current)
+
     toastTimer.current = setTimeout(
       () => setToast({ open: false, message: '', type: 'success' }),
       2500
     )
   }
 
-  const [busca, setBusca] = useState('')
-
   const condominiosFiltrados = useMemo(() => {
     if (!busca.trim()) return condominios
-    const term = busca.trim().toLowerCase()
 
-    return condominios.filter((c) =>
-      (c.nome && c.nome.toLowerCase().includes(term)) ||
-      (c.cnpj && c.cnpj.toLowerCase().includes(term))
-    )
+    const term = normalizarTexto(busca)
+    const digits = somenteDigitos(busca)
+
+    return condominios.filter((c) => {
+      const nome = normalizarTexto(c.nome)
+      const cnpj = somenteDigitos(c.cnpj)
+
+      return nome.includes(term) || (digits && cnpj.includes(digits))
+    })
   }, [busca, condominios])
 
   const handleInputChange = (e) => {
     const { name, value, type, checked } = e.target
-    setFormData(prev => ({ ...prev, [name]: type === 'checkbox' ? checked : value }))
+
+    setFormData((prev) => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value,
+    }))
   }
 
   const resetForm = () => {
     setFormData({
-      nome: '', cnpj: '', endereco: '', bairro: '', cidade: '', estado: '',
-      cep: '', telefone: '', email: '', responsavel: '', qtdFuncionarios: '', ativo: true
+      nome: '',
+      cnpj: '',
+      endereco: '',
+      bairro: '',
+      cidade: '',
+      estado: '',
+      cep: '',
+      telefone: '',
+      email: '',
+      responsavel: '',
+      qtdFuncionarios: '',
+      ativo: true,
     })
+
     setEditandoId(null)
   }
 
   const handleSubmit = () => {
     if (editandoId) {
-      setCondominios(prev =>
-        prev.map(c => c.id === editandoId ? { ...formData, id: editandoId } : c)
+      setCondominios((prev) =>
+        prev.map((c) =>
+          c.id === editandoId
+            ? {
+              ...formData,
+              id: editandoId,
+              qtdFuncionarios: parseInt(formData.qtdFuncionarios, 10) || 0,
+            }
+            : c
+        )
       )
-      showToast('Cadastro Realizado com Sucesso')
+
+      showToast('Cadastro atualizado com sucesso')
     } else {
       const novoCondominio = {
         ...formData,
         id: Date.now(),
-        qtdFuncionarios: parseInt(formData.qtdFuncionarios) || 0
+        qtdFuncionarios: parseInt(formData.qtdFuncionarios, 10) || 0,
       }
-      setCondominios(prev => [...prev, novoCondominio])
-      showToast('Cadastro Realizado com Sucesso')
+
+      setCondominios((prev) => [...prev, novoCondominio])
+      showToast('Cadastro realizado com sucesso')
     }
+
     resetForm()
     setModoAtivo('lista')
   }
@@ -139,7 +330,7 @@ export default function ConfiguracaoCondominios() {
     setConfirm({ open: true, id: cond.id, nome: cond.nome })
 
   const confirmarExclusao = () => {
-    setCondominios(prev => prev.filter(c => c.id !== confirm.id))
+    setCondominios((prev) => prev.filter((c) => c.id !== confirm.id))
     setConfirm({ open: false, id: null, nome: '' })
     showToast('Condomínio excluído com sucesso', 'danger')
   }
@@ -147,10 +338,10 @@ export default function ConfiguracaoCondominios() {
   const cancelarExclusao = () =>
     setConfirm({ open: false, id: null, nome: '' })
 
-  /* UPLOAD PLANILHA */
   const handleFileUpload = (e) => {
     const file = e.target.files[0]
     if (!file) return
+
     if (!file.name.endsWith('.csv') && !file.name.endsWith('.xlsx')) {
       setUploadStatus('error')
       setErrosUpload(['Formato de arquivo inválido. Use CSV ou XLSX.'])
@@ -162,21 +353,6 @@ export default function ConfiguracaoCondominios() {
     setErrosUpload([])
 
     setTimeout(() => {
-      const novosCondominios = [
-        {
-          id: Date.now() + 1, nome: 'Edifício Central Plaza', cnpj: '11.222.333/0001-44',
-          endereco: 'Av. Paulista, 1000', bairro: 'Bela Vista', cidade: 'São Paulo', estado: 'SP',
-          cep: '01310-100', telefone: '(11) 3333-5555', email: 'contato@centralplaza.com.br',
-          responsavel: 'Pedro Oliveira', qtdFuncionarios: 50, ativo: true
-        },
-        {
-          id: Date.now() + 2, nome: 'Condomínio Boa Vista', cnpj: '22.333.444/0001-55',
-          endereco: 'Rua das Acácias, 234', bairro: 'Jardim Botânico', cidade: 'Rio de Janeiro', estado: 'RJ',
-          cep: '22460-000', telefone: '(21) 2555-6666', email: 'admin@boavista.com.br',
-          responsavel: 'Ana Costa', qtdFuncionarios: 28, ativo: true
-        }
-      ]
-      setCondominios(prev => [...prev, ...novosCondominios])
       setUploadStatus('success')
 
       setTimeout(() => {
@@ -189,20 +365,50 @@ export default function ConfiguracaoCondominios() {
 
   const downloadModelo = async () => {
     const XLSX = await ensureXLSX()
-    const dados = [[
-      'Nome', 'CNPJ', 'Endereco', 'Bairro', 'Cidade', 'Estado', 'CEP', 'Telefone', 'Email', 'Responsavel', 'QtdFuncionarios', 'Ativo', 'Funcionarios'
-    ], [
-      'Condomínio Exemplo', '12.345.678/0001-90', 'Rua Exemplo 123', 'Centro', 'Rio de Janeiro', 'RJ',
-      '20000-000', '(21) 3333-4444', 'contato@exemplo.com.br', 'João Silva', 45, true, 'Joe Doe'
-    ]]
+
+    const dados = [
+      [
+        'Nome',
+        'CNPJ',
+        'Endereco',
+        'Bairro',
+        'Cidade',
+        'Estado',
+        'CEP',
+        'Telefone',
+        'Email',
+        'Responsavel',
+        'QtdFuncionarios',
+        'Ativo',
+        'Funcionarios',
+      ],
+      [
+        'Condomínio Exemplo',
+        '12.345.678/0001-90',
+        'Rua Exemplo 123',
+        'Centro',
+        'Rio de Janeiro',
+        'RJ',
+        '20000-000',
+        '(21) 3333-4444',
+        'contato@exemplo.com.br',
+        'João Silva',
+        45,
+        true,
+        'Joe Doe',
+      ],
+    ]
+
     const ws = XLSX.utils.aoa_to_sheet(dados)
     const wb = XLSX.utils.book_new()
+
     XLSX.utils.book_append_sheet(wb, ws, 'Modelo')
     XLSX.writeFile(wb, 'modelo_condominios.xlsx')
   }
 
   const ModalConfirm = ({ open, nome, onConfirm, onCancel }) => {
     if (!open) return null
+
     return (
       <div className="modal-backdrop">
         <div className="modal">
@@ -211,16 +417,25 @@ export default function ConfiguracaoCondominios() {
               <Trash2 className="ico danger" />
               <h3>Excluir condomínio</h3>
             </div>
+
             <button className="icon-btn" onClick={onCancel}>
               <X className="ico" />
             </button>
           </div>
+
           <div className="modal-body">
-            Tem certeza que deseja excluir <strong>{nome}</strong>? Esta ação não pode ser desfeita.
+            Tem certeza que deseja excluir <strong>{nome}</strong>? Esta ação não pode
+            ser desfeita.
           </div>
+
           <div className="modal-actions">
-            <button className="btn btn-light" onClick={onCancel}>Cancelar</button>
-            <button className="btn btn-danger" onClick={onConfirm}>Excluir</button>
+            <button className="btn btn-light" onClick={onCancel}>
+              Cancelar
+            </button>
+
+            <button className="btn btn-danger" onClick={onConfirm}>
+              Excluir
+            </button>
           </div>
         </div>
       </div>
@@ -230,78 +445,105 @@ export default function ConfiguracaoCondominios() {
   const ListaAcoes = () => (
     <div className="cfg-actions">
       <button onClick={() => setModoAtivo('form')} className="btn btn-primary">
-        <Plus className="ico" /><span>Novo Condomínio</span>
+        <Plus className="ico" />
+        <span>Novo Condomínio</span>
       </button>
+
       <button onClick={() => setModoAtivo('upload')} className="btn btn-success">
-        <Upload className="ico" /><span>Importar Planilha</span>
+        <Upload className="ico" />
+        <span>Importar Planilha</span>
       </button>
+
       <button onClick={downloadModelo} className="btn btn-dark">
-        <Download className="ico" /><span>Baixar Modelo</span>
+        <Download className="ico" />
+        <span>Baixar Modelo</span>
+      </button>
+
+      <button onClick={carregarCondominios} className="btn btn-light">
+        <Building2 className="ico" />
+        <span>Atualizar</span>
       </button>
     </div>
   )
 
   const Tabela = () => (
     <div className="card">
-      <div className="table-wrap">
-        <table className="table">
-          <thead>
-            <tr>
-              <th>Condomínio</th>
-              <th>CNPJ</th>
-              
-              <th>Contato</th>
-              <th>Funcionários</th>
-              <th>Status</th>
-              <th className="text-right">Ações</th>
-            </tr>
-          </thead>
-          <tbody>
-            {condominiosFiltrados.map(cond => (
-              <tr key={cond.id}>
-                <td>
-                  <div className="cell-flex">
-                    <Building2 className="ico brand" />
-                    <div>
-                      <div className="cell-title">{cond.nome}</div>
-                      <div className="cell-sub">{cond.responsavel}</div>
-                    </div>
-                  </div>
-                </td>
-                <td className="muted">{cond.cnpj}</td>
-               
-                <td className="muted">
-                  <div>{cond.telefone}</div>
-                  <div className="cell-sub">{cond.email}</div>
-                </td>
-                <td className="muted">{cond.qtdFuncionarios}</td>
-                <td>
-                  <span className={'pill ' + (cond.ativo ? 'pill-green' : 'pill-red')}>
-                    {cond.ativo ? 'Ativo' : 'Inativo'}
-                  </span>
-                </td>
-                <td className="text-right">
-                  <button className="link link-blue" onClick={() => handleEditar(cond)}>Editar</button>
-                  <button className="link link-red" onClick={() => solicitarExcluir(cond)}>Excluir</button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {condominios.length === 0 && (
+      {loadingCondominios ? (
         <div className="empty">
           <Building2 className="ico xl muted" />
-          <p>Nenhum condomínio cadastrado</p>
+          <p>Carregando condomínios...</p>
         </div>
-      )}
-
-      {condominios.length > 0 && condominiosFiltrados.length === 0 && (
+      ) : erroCondominios ? (
         <div className="empty">
-          <Building2 className="ico xl muted" />
-          <p>Nenhum condomínio encontrado para a busca</p>
+          <AlertCircle className="ico xl muted" />
+          <p>{erroCondominios}</p>
         </div>
+      ) : (
+        <>
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Condomínio</th>
+                  <th>CNPJ</th>
+                  <th>Funcionários</th>
+                  <th>Status</th>
+                  <th className="text-right">Ações</th>
+                </tr>
+              </thead>
+
+              <tbody>
+                {condominiosFiltrados.map((cond) => (
+                  <tr key={cond.id}>
+                    <td>
+                      <div className="cell-flex">
+                        <Building2 className="ico brand" />
+
+                        <div>
+                          <div className="cell-title">{cond.nome}</div>
+                        </div>
+                      </div>
+                    </td>
+
+                    <td className="muted">{cond.cnpj || '—'}</td>
+
+                    <td className="muted">{cond.qtdFuncionarios}</td>
+
+                    <td>
+                      <span className={'pill ' + (cond.ativo ? 'pill-green' : 'pill-red')}>
+                        {cond.ativo ? 'Ativo' : 'Inativo'}
+                      </span>
+                    </td>
+
+                    <td className="text-right">
+                      <button className="link link-blue" onClick={() => handleEditar(cond)}>
+                        Editar
+                      </button>
+
+                      <button className="link link-red" onClick={() => solicitarExcluir(cond)}>
+                        Excluir
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {condominios.length === 0 && (
+            <div className="empty">
+              <Building2 className="ico xl muted" />
+              <p>Nenhum condomínio cadastrado</p>
+            </div>
+          )}
+
+          {condominios.length > 0 && condominiosFiltrados.length === 0 && (
+            <div className="empty">
+              <Building2 className="ico xl muted" />
+              <p>Nenhum condomínio encontrado para a busca</p>
+            </div>
+          )}
+        </>
       )}
     </div>
   )
@@ -309,15 +551,25 @@ export default function ConfiguracaoCondominios() {
   const Formulario = () => (
     <div className="card pad">
       <div className="card-head">
-        <h2 className="card-title">{editandoId ? 'Editar Condomínio' : 'Novo Condomínio'}</h2>
-        <button className="icon-btn" onClick={() => { resetForm(); setModoAtivo('lista') }}>
+        <h2 className="card-title">
+          {editandoId ? 'Editar Condomínio' : 'Novo Condomínio'}
+        </h2>
+
+        <button
+          className="icon-btn"
+          onClick={() => {
+            resetForm()
+            setModoAtivo('lista')
+          }}
+        >
           <X className="ico" />
         </button>
       </div>
 
       <div className="grid">
         <div className="grid-full section-title">
-          <Building2 className="ico" /><span>Dados Básicos</span>
+          <Building2 className="ico" />
+          <span>Dados Básicos</span>
         </div>
 
         <div className="field">
@@ -327,16 +579,12 @@ export default function ConfiguracaoCondominios() {
 
         <div className="field">
           <label>CNPJ *</label>
-          <input
-            name="cnpj"
-            value={formData.cnpj}
-            onChange={handleInputChange}
-            placeholder="00.000.000/0000-00"
-          />
+          <input name="cnpj" value={formData.cnpj} onChange={handleInputChange} />
         </div>
 
         <div className="grid-full section-title mt">
-          <MapPin className="ico" /><span>Endereço</span>
+          <MapPin className="ico" />
+          <span>Endereço</span>
         </div>
 
         <div className="field grid-full">
@@ -351,12 +599,7 @@ export default function ConfiguracaoCondominios() {
 
         <div className="field">
           <label>CEP *</label>
-          <input
-            name="cep"
-            value={formData.cep}
-            onChange={handleInputChange}
-            placeholder="00000-000"
-          />
+          <input name="cep" value={formData.cep} onChange={handleInputChange} />
         </div>
 
         <div className="field">
@@ -375,18 +618,9 @@ export default function ConfiguracaoCondominios() {
           </select>
         </div>
 
-        <div className="grid-full section-title mt">
-          <Phone className="ico" /><span>Contato</span>
-        </div>
-
         <div className="field">
           <label>Telefone *</label>
-          <input
-            name="telefone"
-            value={formData.telefone}
-            onChange={handleInputChange}
-            placeholder="(00) 0000-0000"
-          />
+          <input name="telefone" value={formData.telefone} onChange={handleInputChange} />
         </div>
 
         <div className="field">
@@ -400,7 +634,8 @@ export default function ConfiguracaoCondominios() {
         </div>
 
         <div className="grid-full section-title mt">
-          <Users className="ico" /><span>Informações Adicionais</span>
+          <Users className="ico" />
+          <span>Informações Adicionais</span>
         </div>
 
         <div className="field">
@@ -438,9 +673,17 @@ export default function ConfiguracaoCondominios() {
 
       <div className="actions">
         <button className="btn btn-primary lg" onClick={handleSubmit}>
-          <Save className="ico" /><span>{editandoId ? 'Atualizar' : 'Cadastrar'}</span>
+          <Save className="ico" />
+          <span>{editandoId ? 'Atualizar' : 'Cadastrar'}</span>
         </button>
-        <button className="btn btn-light lg" onClick={() => { resetForm(); setModoAtivo('lista') }}>
+
+        <button
+          className="btn btn-light lg"
+          onClick={() => {
+            resetForm()
+            setModoAtivo('lista')
+          }}
+        >
           Cancelar
         </button>
       </div>
@@ -451,6 +694,7 @@ export default function ConfiguracaoCondominios() {
     <div className="card pad">
       <div className="card-head">
         <h2 className="card-title">Importar Condomínios</h2>
+
         <button
           className="icon-btn"
           onClick={() => {
@@ -471,8 +715,10 @@ export default function ConfiguracaoCondominios() {
           <li>Salve em CSV ou XLSX</li>
           <li>Faça o upload do arquivo</li>
         </ol>
+
         <button className="btn btn-dark" onClick={downloadModelo}>
-          <Download className="ico" /><span>Baixar Modelo de Planilha</span>
+          <Download className="ico" />
+          <span>Baixar Modelo de Planilha</span>
         </button>
       </div>
 
@@ -483,6 +729,7 @@ export default function ConfiguracaoCondominios() {
           accept=".csv,.xlsx"
           onChange={handleFileUpload}
         />
+
         <label htmlFor="planilha-upload" className="drop-area">
           <FileSpreadsheet className="ico xl" />
           <p className="drop-title">Clique para selecionar a planilha</p>
@@ -495,6 +742,7 @@ export default function ConfiguracaoCondominios() {
           {uploadStatus === 'success' && <CheckCircle className="ico" />}
           {uploadStatus === 'error' && <AlertCircle className="ico" />}
           {uploadStatus === 'processing' && <span className="spinner" />}
+
           <div className="alert-text">
             <p className="alert-title">
               {uploadStatus === 'success'
@@ -503,6 +751,7 @@ export default function ConfiguracaoCondominios() {
                   ? 'Erro ao processar arquivo'
                   : 'Processando planilha...'}
             </p>
+
             {uploadedFile && <p className="alert-file">{uploadedFile.name}</p>}
           </div>
         </div>
@@ -511,6 +760,7 @@ export default function ConfiguracaoCondominios() {
       {errosUpload.length > 0 && (
         <div className="errors">
           <p className="errors-title">Erros encontrados:</p>
+
           <ul>
             {errosUpload.map((e, i) => (
               <li key={i}>{e}</li>
@@ -556,12 +806,16 @@ export default function ConfiguracaoCondominios() {
         role="status"
         aria-live="polite"
       >
-        <div className={`cfg-toast ${toast.type === 'danger' ? 'cfg-toast-danger' : 'cfg-toast-success'}`}>
+        <div
+          className={`cfg-toast ${toast.type === 'danger' ? 'cfg-toast-danger' : 'cfg-toast-success'
+            }`}
+        >
           {toast.type === 'danger' ? (
             <Trash2 className="cfg-toast-ico" />
           ) : (
             <CheckCircle className="cfg-toast-ico" />
           )}
+
           <span>{toast.message}</span>
         </div>
       </div>

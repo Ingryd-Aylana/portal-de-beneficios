@@ -71,7 +71,7 @@ export const faturamentoService = {
   },
 
   async listarPedidosFuncionario() {
-    return apiFetch('/upload/list-confirmed/', {
+    return apiFetch('/beneficios/importacoes/', {
       method: 'GET',
     })
   },
@@ -85,9 +85,17 @@ export const faturamentoService = {
   },
 
   async listarDocumentosPorPedido(pedidoId) {
-    const pedidos = await this.listarPedidosFuncionario()
+    const response = await this.listarPedidosFuncionario()
 
-    if (!Array.isArray(pedidos)) return null
+    const pedidos = Array.isArray(response)
+      ? response
+      : Array.isArray(response?.results)
+        ? response.results
+        : Array.isArray(response?.data)
+          ? response.data
+          : Array.isArray(response?.pedidos)
+            ? response.pedidos
+            : []
 
     return pedidos.find((pedido) => String(pedido.id) === String(pedidoId)) || null
   },
@@ -102,7 +110,10 @@ export const faturamentoService = {
     })
 
     const queryString = query.toString()
-    return `${API_BASE_URL}/upload/export/faturamento/${queryString ? `?${queryString}` : ''}`
+
+    return `${API_BASE_URL}/upload/export/faturamento/${
+      queryString ? `?${queryString}` : ''
+    }`
   },
 
   async baixarExportFaturamento(params = {}, nomeBase = 'faturamento') {
@@ -134,13 +145,13 @@ export const faturamentoService = {
 
     const blob = await response.blob()
 
-    // Ajuda a diagnosticar no console
     console.log('Export faturamento content-type:', contentType)
     console.log('Export faturamento content-disposition:', contentDisposition)
     console.log('Export faturamento blob size:', blob.size)
 
     const filenameFromHeader = extractFilenameFromDisposition(contentDisposition)
     const extension = inferExtension(contentType)
+
     const finalName =
       filenameFromHeader ||
       `${nomeBase}.${extension}`
