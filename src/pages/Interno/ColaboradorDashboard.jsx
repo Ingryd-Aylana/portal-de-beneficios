@@ -21,7 +21,9 @@ import { entebenService } from '../../services/entebenService'
 const fmtDate = (s) => {
   if (!s) return '-'
 
-  const value = String(s)
+  const value = String(s).trim()
+
+  if (!value) return '-'
 
   if (value.includes('/')) return value
 
@@ -47,6 +49,36 @@ const fmtDate = (s) => {
   return value
 }
 
+const fmtMonthYear = (value) => {
+  if (!value) return '-'
+
+  const raw = String(value).trim()
+
+  if (!raw) return '-'
+
+  const brMonthYear = raw.match(/^(0?[1-9]|1[0-2])\/(\d{4})$/)
+  if (brMonthYear) {
+    const [, month, year] = brMonthYear
+    return `${month.padStart(2, '0')}/${year}`
+  }
+
+  const isoMonthYear = raw.match(/^(\d{4})-(0?[1-9]|1[0-2])$/)
+  if (isoMonthYear) {
+    const [, year, month] = isoMonthYear
+    return `${month.padStart(2, '0')}/${year}`
+  }
+
+  const date = new Date(raw)
+  if (!Number.isNaN(date.getTime())) {
+    return date.toLocaleDateString('pt-BR', {
+      month: '2-digit',
+      year: 'numeric',
+    })
+  }
+
+  return fmtDate(raw)
+}
+
 const fmtMoney = (value) =>
   Number(value || 0).toLocaleString('pt-BR', {
     style: 'currency',
@@ -60,6 +92,32 @@ const norm = (s) =>
     .replace(/[\u0300-\u036f]/g, '')
     .toLowerCase()
     .trim()
+
+const firstValid = (...values) => {
+  for (const value of values) {
+    if (value === 0) return value
+    if (value !== undefined && value !== null && String(value).trim() !== '') {
+      return value
+    }
+  }
+
+  return null
+}
+
+const toNumber = (value) => {
+  if (value === undefined || value === null || value === '') return 0
+
+  if (typeof value === 'number') return value
+
+  const normalized = String(value)
+    .replace(/R$/g, '')
+    .replace(/ /g, '')
+    .replace(/[.]/g, '')
+    .replace(',', '.')
+
+  const number = Number(normalized)
+  return Number.isNaN(number) ? 0 : number
+}
 
 function Toasts({ toasts, onClose }) {
   return (
@@ -150,6 +208,20 @@ function ConfirmModal({
   )
 }
 
+const statusMap = {
+  AGUARDANDO_FATURAMENTO: 'aprovado',
+  EM_FATURAMENTO: 'em_faturamento',
+  FATURADO: 'faturado',
+  CANCELADO: 'cancelado',
+  aguardando_faturamento: 'aprovado',
+  em_faturamento: 'em_faturamento',
+  faturado: 'faturado',
+  cancelado: 'cancelado',
+  aprovado: 'aprovado',
+}
+
+const normalizarStatus = (status) => statusMap[status] || statusMap[String(status || '').toLowerCase()] || 'aprovado'
+
 const statusLabel = {
   aprovado: 'Aprovado',
   em_faturamento: 'Em faturamento',
@@ -162,6 +234,73 @@ const getStatusClass = (status) => {
   if (status === 'cancelado') return 'cancelado'
   if (status === 'em_faturamento') return 'em_faturamento'
   return 'aprovado'
+}
+
+const statusRank = {
+  aprovado: 1,
+  em_faturamento: 2,
+  faturado: 3,
+  cancelado: 99,
+}
+
+const timelineSteps = [
+  {
+    key: 'importacao',
+    title: 'Importação recebida',
+    description: 'Arquivo importado e processado no sistema.',
+    dateFields: ['dataImportacao', 'importadoEm'],
+    minRank: 0,
+  },
+  {
+    key: 'aprovado',
+    title: 'Aprovado',
+    description: 'Pedido liberado para iniciar o faturamento.',
+    dateFields: ['aprovadoEm', 'dataImportacao'],
+    minRank: 1,
+  },
+  {
+    key: 'em_faturamento',
+    title: 'Em faturamento',
+    description: 'Planilha de faturamento baixada/iniciada.',
+    dateFields: ['emFaturamentoEm', 'dataEmFaturamento', 'baixadoEm'],
+    minRank: 2,
+  },
+  {
+    key: 'faturado',
+    title: 'Faturado',
+    description: 'Documentos importados e faturamento finalizado.',
+    dateFields: ['faturadoEm', 'dataFaturado', 'importadoEm'],
+    minRank: 3,
+  },
+]
+
+const getTimelineItems = (pedido) => {
+  const rankAtual = statusRank[pedido?.status] || 0
+
+  const items = timelineSteps.map((step) => {
+    const date = firstValid(...step.dateFields.map((field) => pedido?.[field]))
+    const done = step.key === 'importacao' ? Boolean(date) : rankAtual >= step.minRank
+
+    return {
+      ...step,
+      date,
+      done,
+      current: pedido?.status === step.key,
+    }
+  })
+
+  if (pedido?.status === 'cancelado') {
+    items.push({
+      key: 'cancelado',
+      title: 'Cancelado',
+      description: pedido?.motivoCancelamento || 'Faturamento cancelado.',
+      date: pedido?.canceladoEm,
+      done: true,
+      current: true,
+    })
+  }
+
+  return items
 }
 
 const extrairResumoPedido = (pedidoApi) => {
@@ -181,6 +320,8 @@ const extrairResumoPedido = (pedidoApi) => {
   const primeiroMov = movsDetalhadas[0] || {}
   const primeiroCondominioNovo = condominiosNovos[0] || {}
   const primeiroCondominioResumo = condominiosResumo[0] || {}
+  const primeiroFuncionarioResumo = primeiroCondominioResumo?.funcionarios?.[0] || {}
+  const primeiraMovimentacaoResumo = primeiroFuncionarioResumo?.movimentacoes?.[0] || {}
 
   const usandoFormatoDetalhado = movsDetalhadas.length > 0
   const usandoFormatoResumo = condominiosResumo.length > 0
@@ -197,19 +338,40 @@ const extrairResumoPedido = (pedidoApi) => {
 
   if (usandoFormatoDetalhado) {
     valorTotal = movsDetalhadas.reduce(
-      (acc, item) => acc + Number(item.valor_recarga_bene || 0),
+      (acc, item) =>
+        acc +
+        toNumber(
+          firstValid(
+            item.valor_recarga_bene,
+            item.valor_total,
+            item.valorTotal,
+            item.valor_beneficio,
+            item.valor_beneficios,
+            item.valor
+          )
+        ),
       0
     )
 
     const funcionariosUnicos = [
-      ...new Set(movsDetalhadas.map((m) => m.nome_func).filter(Boolean)),
+      ...new Set(
+        movsDetalhadas
+          .map((m) => m.nome_func || m.nome_funcionario || m.cpf || m.matricula)
+          .filter(Boolean)
+      ),
     ]
 
-    totalFuncionarios = funcionariosUnicos.length || funcionariosNovos.length
+    totalFuncionarios =
+      Number(summary.total_funcionarios || 0) ||
+      Number(summary.quantidade_funcionarios || 0) ||
+      funcionariosUnicos.length ||
+      funcionariosNovos.length
 
     nomeCondominio =
       primeiroCondominioNovo.razao_social ||
+      primeiroCondominioNovo.nome ||
       primeiroMov.departamento ||
+      primeiroMov.condominio ||
       primeiroMov.cnpj ||
       '-'
 
@@ -218,97 +380,288 @@ const extrairResumoPedido = (pedidoApi) => {
     uf = primeiroMov.uf || primeiroCondominioNovo.uf || '-'
 
     dataVencimento =
-      primeiroMov.vencimento ||
-      dadosReq.vencimento ||
-      '-'
+      firstValid(
+        primeiroMov.vencimento,
+        primeiroMov.data_vencimento,
+        primeiroMov.dataVencimento,
+        primeiroMov.dt_vencimento,
+        primeiroMov.vencimento_beneficio,
+        dadosReq.vencimento,
+        dadosReq.data_vencimento,
+        dadosReq.dataVencimento,
+        dadosReq.dt_vencimento,
+        dadosReq.vencimento_beneficio,
+        pedidoApi.data_vencimento,
+        pedidoApi.dataVencimento,
+        pedidoApi.dt_vencimento,
+        pedidoApi.vencimento
+      ) || '-'
 
-    quantidadeDias = Math.max(
-      ...movsDetalhadas.map((m) => Number(m.quantidade || 0)),
-      0
-    ) || '-'
+    quantidadeDias =
+      Math.max(
+        ...movsDetalhadas.map((m) =>
+          Number(m.quantidade || m.quantidade_dias || m.qtd_dias || m.dias || 0)
+        ),
+        0
+      ) || '-'
 
-    const competenciaBruta =
-      primeiroMov.periodo2 ||
-      primeiroMov.periodos ||
-      dadosReq.competencia ||
-      dadosReq.vencimento ||
-      pedidoApi.processed_at
+    const competenciaBruta = firstValid(
+      primeiroMov.periodo2,
+      primeiroMov.periodos,
+      primeiroMov.competencia,
+      primeiroMov.mes_competencia,
+      summary.data_competencia_arquivo,
+      summary.competencia,
+      dadosReq.competencia,
+      dadosReq.mes_competencia,
+      dadosReq.data_competencia,
+      dadosReq.vigencia_inicio,
+      pedidoApi.competencia,
+      pedidoApi.mes_competencia,
+      pedidoApi.data_competencia,
+      pedidoApi.vigencia_inicio
+    )
 
-    if (competenciaBruta) {
-      const data = new Date(competenciaBruta)
-      if (!Number.isNaN(data.getTime())) {
-        mesUtilizacao = data.toLocaleDateString('pt-BR', {
-          month: '2-digit',
-          year: 'numeric',
-        })
-      } else {
-        mesUtilizacao = fmtDate(competenciaBruta)
-      }
-    }
+    mesUtilizacao = fmtMonthYear(competenciaBruta)
   } else if (usandoFormatoResumo) {
     valorTotal =
       condominiosResumo.reduce(
-        (acc, cond) => acc + Number(cond.valor_condo || 0),
+        (acc, cond) =>
+          acc +
+          toNumber(
+            firstValid(
+              cond.valor_condo,
+              cond.valor_total,
+              cond.valorTotal,
+              cond.valor_beneficios,
+              cond.valor_faturamento,
+              cond.total_valor,
+              cond.total,
+              cond.valor
+            )
+          ),
         0
-      ) || Number(summary.valor_total_beneficios || 0)
+      ) ||
+      toNumber(
+        firstValid(
+          summary.valor_total_beneficios,
+          summary.valor_total,
+          summary.valorTotal,
+          summary.valor_beneficios,
+          summary.valor_faturamento,
+          summary.valor_total_faturamento,
+          summary.total_valor,
+          summary.total,
+          summary.valor,
+          summary.total_beneficios
+        )
+      )
 
-    totalFuncionarios = condominiosResumo.reduce(
-      (acc, cond) => acc + (Array.isArray(cond.funcionarios) ? cond.funcionarios.length : 0),
+    totalFuncionarios =
+      Number(summary.total_funcionarios || 0) ||
+      Number(summary.quantidade_funcionarios || 0) ||
+      condominiosResumo.reduce((acc, cond) => {
+        const funcionarios = Array.isArray(cond.funcionarios)
+          ? cond.funcionarios
+          : Array.isArray(cond.colaboradores)
+            ? cond.colaboradores
+            : []
+
+        return acc + funcionarios.length
+      }, 0) ||
+      funcionariosNovos.length
+
+    nomeCondominio =
+      primeiroCondominioResumo.nome ||
+      primeiroCondominioResumo.razao_social ||
+      primeiroCondominioResumo.condominio ||
+      '-'
+
+    cnpj = primeiroCondominioResumo.cnpj || summary.primeiro_cnpj_processado || '-'
+    cidade = primeiroCondominioResumo.cidade || summary.cidade || '-'
+    uf = primeiroCondominioResumo.uf || summary.uf || '-'
+
+    dataVencimento =
+      firstValid(
+        primeiroCondominioResumo.vencimento,
+        primeiroCondominioResumo.data_vencimento,
+        primeiroCondominioResumo.dataVencimento,
+        primeiroCondominioResumo.dt_vencimento,
+        primeiroCondominioResumo.vencimento_beneficio,
+        primeiroFuncionarioResumo.vencimento,
+        primeiroFuncionarioResumo.data_vencimento,
+        primeiroFuncionarioResumo.dataVencimento,
+        primeiraMovimentacaoResumo.vencimento,
+        primeiraMovimentacaoResumo.data_vencimento,
+        primeiraMovimentacaoResumo.dataVencimento,
+        summary.vencimento,
+        summary.data_vencimento,
+        summary.dataVencimento,
+        summary.dt_vencimento,
+        dadosReq.vencimento,
+        dadosReq.data_vencimento,
+        dadosReq.dataVencimento,
+        dadosReq.dt_vencimento,
+        dadosReq.vencimento_beneficio,
+        pedidoApi.data_vencimento,
+        pedidoApi.dataVencimento,
+        pedidoApi.dt_vencimento,
+        pedidoApi.vencimento
+      ) || '-'
+
+    quantidadeDias =
+      firstValid(
+        summary.quantidade_dias,
+        summary.qtd_dias,
+        dadosReq.quantidade_dias,
+        dadosReq.qtd_dias,
+        primeiroCondominioResumo.quantidade_dias,
+        primeiroFuncionarioResumo.quantidade_dias,
+        primeiraMovimentacaoResumo.quantidade,
+        primeiraMovimentacaoResumo.quantidade_dias,
+        primeiraMovimentacaoResumo.qtd_dias
+      ) || '-'
+
+    const competenciaBruta = firstValid(
+      summary.data_competencia_arquivo,
+      summary.competencia,
+      summary.mes_competencia,
+      dadosReq.competencia,
+      dadosReq.mes_competencia,
+      dadosReq.data_competencia,
+      dadosReq.vigencia_inicio,
+      pedidoApi.competencia,
+      pedidoApi.mes_competencia,
+      pedidoApi.data_competencia,
+      pedidoApi.vigencia_inicio
+    )
+
+    mesUtilizacao = fmtMonthYear(competenciaBruta)
+  } else {
+    valorTotal = toNumber(
+      firstValid(
+        pedidoApi.valor_total,
+        pedidoApi.valorTotal,
+        pedidoApi.valor_total_beneficios,
+        pedidoApi.valor_beneficios,
+        pedidoApi.valor_faturamento,
+        pedidoApi.valor_total_faturamento,
+        pedidoApi.total_valor,
+        pedidoApi.total,
+        pedidoApi.valor,
+        pedidoApi.total_beneficios,
+        dadosReq.valor_total,
+        dadosReq.valorTotal,
+        dadosReq.valor_total_beneficios,
+        dadosReq.valor_beneficios,
+        dadosReq.valor_faturamento,
+        dadosReq.valor_total_faturamento,
+        dadosReq.total_valor,
+        dadosReq.total,
+        dadosReq.valor,
+        dadosReq.total_beneficios,
+        summary.valor_total_beneficios,
+        summary.valor_total,
+        summary.valor_beneficios,
+        summary.valor_faturamento,
+        summary.valor_total_faturamento,
+        summary.total_valor,
+        summary.total,
+        summary.valor,
+        summary.total_beneficios
+      )
+    )
+
+    totalFuncionarios = Number(
+      pedidoApi.registros_processados ||
+      pedidoApi.total_registros ||
+      pedidoApi.total_funcionarios ||
+      pedidoApi.quantidade_funcionarios ||
+      dadosReq.registros_processados ||
+      dadosReq.total_registros ||
+      dadosReq.total_funcionarios ||
+      dadosReq.quantidade_funcionarios ||
       0
     )
 
-    nomeCondominio = primeiroCondominioResumo.nome || '-'
-    cnpj = primeiroCondominioResumo.cnpj || summary.primeiro_cnpj_processado || '-'
-
-    const vencimentoCondominio = primeiroCondominioResumo?.vencimento
-    const vencimentoFuncionario = primeiroCondominioResumo?.funcionarios?.[0]?.vencimento
-    const vencimentoMovimentacao =
-      primeiroCondominioResumo?.funcionarios?.[0]?.movimentacoes?.[0]?.vencimento
-    const vencimentoSummary = summary?.vencimento
+    nomeCondominio = pedidoApi.nome_condominio || pedidoApi.condominio || dadosReq.nome_condominio || '-'
+    cnpj = pedidoApi.cnpj || dadosReq.cnpj || '-'
+    cidade = pedidoApi.cidade || dadosReq.cidade || '-'
+    uf = pedidoApi.uf || dadosReq.uf || '-'
 
     dataVencimento =
-      vencimentoCondominio ||
-      vencimentoFuncionario ||
-      vencimentoMovimentacao ||
-      vencimentoSummary ||
-      dadosReq.vencimento ||
-      dadosReq.data_vencimento ||
-      pedidoApi.data_vencimento ||
-      pedidoApi.vencimento ||
-      '-'
+      firstValid(
+        pedidoApi.data_vencimento,
+        pedidoApi.dataVencimento,
+        pedidoApi.vencimento,
+        pedidoApi.dt_vencimento,
+        dadosReq.data_vencimento,
+        dadosReq.dataVencimento,
+        dadosReq.vencimento,
+        dadosReq.dt_vencimento
+      ) || '-'
 
-    quantidadeDias = '-'
+    quantidadeDias =
+      firstValid(
+        pedidoApi.quantidade_dias,
+        pedidoApi.qtd_dias,
+        dadosReq.quantidade_dias,
+        dadosReq.qtd_dias
+      ) || '-'
 
-    const competenciaBruta =
-      summary.data_competencia_arquivo ||
-      dadosReq.competencia ||
-      dadosReq.vigencia_inicio ||
-      pedidoApi.competencia ||
-      pedidoApi.vigencia_inicio ||
-      pedidoApi.processed_at
-
-    if (competenciaBruta) {
-      const data = new Date(competenciaBruta)
-      if (!Number.isNaN(data.getTime())) {
-        mesUtilizacao = data.toLocaleDateString('pt-BR', {
-          month: '2-digit',
-          year: 'numeric',
-        })
-      } else {
-        mesUtilizacao = fmtDate(competenciaBruta)
-      }
-    }
+    mesUtilizacao = fmtMonthYear(
+      firstValid(
+        pedidoApi.competencia,
+        pedidoApi.mes_competencia,
+        pedidoApi.data_competencia,
+        pedidoApi.vigencia_inicio,
+        dadosReq.competencia,
+        dadosReq.mes_competencia,
+        dadosReq.data_competencia,
+        dadosReq.vigencia_inicio
+      )
+    )
   }
 
   return {
     id: pedidoApi.id,
-    fileId: pedidoApi.file || dadosReq.file_upload_id || null,
-    status: pedidoApi.status || 'aprovado',
+    fileId: pedidoApi.file || pedidoApi.file_upload_id || dadosReq.file_upload_id || null,
+    status: normalizarStatus(pedidoApi.status),
     dataVencimento,
     mesUtilizacao,
     quantidadeDias,
-    aprovadoEm: pedidoApi.aprovadoEm || pedidoApi.aprovado_em || pedidoApi.processed_at || '-',
-    canceladoEm: pedidoApi.canceladoEm || pedidoApi.cancelado_em || null,
+    dataImportacao:
+      pedidoApi.dataImportacao ||
+      pedidoApi.data_importacao ||
+      dadosReq.dataImportacao ||
+      dadosReq.data_importacao ||
+      null,
+    aprovadoEm:
+      pedidoApi.aprovadoEm ||
+      pedidoApi.aprovado_em ||
+      pedidoApi.data_aprovacao ||
+      pedidoApi.dataImportacao ||
+      pedidoApi.data_importacao ||
+      dadosReq.dataImportacao ||
+      dadosReq.data_importacao ||
+      '-',
+    emFaturamentoEm:
+      pedidoApi.emFaturamentoEm ||
+      pedidoApi.em_faturamento_em ||
+      pedidoApi.data_em_faturamento ||
+      pedidoApi.baixadoEm ||
+      pedidoApi.baixado_em ||
+      pedidoApi.data_download ||
+      null,
+    faturadoEm:
+      pedidoApi.faturadoEm ||
+      pedidoApi.faturado_em ||
+      pedidoApi.data_faturamento ||
+      pedidoApi.data_faturado ||
+      pedidoApi.importadoEm ||
+      pedidoApi.importado_em ||
+      null,
+    canceladoEm: pedidoApi.canceladoEm || pedidoApi.cancelado_em || pedidoApi.data_cancelamento || null,
     motivoCancelamento: pedidoApi.motivoCancelamento || pedidoApi.motivo_cancelamento || '',
     documentosImportados:
       pedidoApi.documentosImportados || pedidoApi.documentos_importados || [],
@@ -397,20 +750,24 @@ export default function ColaboradorDashboard() {
             ? response.data
             : []
 
-      // 🔥 aqui é o pulo do gato
       const listaCorrigida = lista.map((pedido) => {
         if (!ultimaImportacao) return pedido
 
+        const pedidoId = pedido?.id
+        const pedidoFile = pedido?.file || pedido?.file_upload_id
+        const ultimaPedidoId = ultimaImportacao?.pedido_id || ultimaImportacao?.faturamento_id
+        const ultimaFileId = ultimaImportacao?.file_upload_id
+
         const mesmoPedido =
-          String(pedido?.id) === String(ultimaImportacao?.id) ||
-          String(pedido?.file) === String(ultimaImportacao?.file_upload_id)
+          (pedidoId && ultimaPedidoId && String(pedidoId) === String(ultimaPedidoId)) ||
+          (pedidoFile && ultimaFileId && String(pedidoFile) === String(ultimaFileId))
 
         if (!mesmoPedido) return pedido
 
         return {
           ...pedido,
           dados_requisicao: {
-            ...(pedido?.dados_requisicao || {}),
+            ...(pedido?.dados_requisicao || pedido?.dadosRequisicao || {}),
             ...(ultimaImportacao || {}),
             condominios: ultimaImportacao?.condominios || [],
             summary: ultimaImportacao?.summary || {},
@@ -534,12 +891,12 @@ export default function ColaboradorDashboard() {
       prev.map((item) =>
         item.id === pedido.id
           ? {
-            ...item,
-            status: newStatus,
-            ...(newStatus !== 'cancelado'
-              ? { motivoCancelamento: '', canceladoEm: null }
-              : {}),
-          }
+              ...item,
+              status: newStatus,
+              ...(newStatus !== 'cancelado'
+                ? { motivoCancelamento: '', canceladoEm: null }
+                : {}),
+            }
           : item
       )
     )
@@ -692,13 +1049,14 @@ export default function ColaboradorDashboard() {
         prev.map((item) =>
           item.id === selectedPedido.id
             ? {
-              ...item,
-              status: response?.status,
-              documentosImportados: response?.documentosImportados || [],
-              importadoEm:
-                response?.importadoEm ||
-                new Date().toLocaleDateString('pt-BR'),
-            }
+                ...item,
+                status: response?.status || item.status,
+                documentosImportados: response?.documentosImportados || [],
+                importadoEm:
+                  response?.importadoEm ||
+                  response?.importado_em ||
+                  new Date().toLocaleDateString('pt-BR'),
+              }
             : item
         )
       )
@@ -760,11 +1118,11 @@ export default function ColaboradorDashboard() {
       prev.map((item) =>
         item.id === cancelPedido?.id
           ? {
-            ...item,
-            status: 'cancelado',
-            motivoCancelamento: motivo,
-            canceladoEm: new Date().toLocaleDateString('pt-BR'),
-          }
+              ...item,
+              status: 'cancelado',
+              motivoCancelamento: motivo,
+              canceladoEm: new Date().toLocaleDateString('pt-BR'),
+            }
           : item
       )
     )
@@ -810,6 +1168,7 @@ export default function ColaboradorDashboard() {
 
       if (detailsOpen) {
         setDetailsOpen(false)
+        setDetailsPedido(null)
       }
     }
 
@@ -851,7 +1210,7 @@ export default function ColaboradorDashboard() {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="Buscar por pedido, condomínio, CNPJ..."
+            placeholder="Buscar por pedido, data, CNPJ..."
           />
           {search && (
             <button className="cf-search-clear" onClick={() => setSearch('')}>
@@ -934,7 +1293,7 @@ export default function ColaboradorDashboard() {
                   <td style={{ fontSize: 13 }}>{p.mesUtilizacao}</td>
 
                   <td style={{ fontFamily: 'var(--mono)', fontSize: 12 }}>
-                    {p.totalFuncionarios}
+                    {p.totalFuncionarios || 0}
                   </td>
 
                   <td style={{ fontWeight: 600, color: '#16a34a' }}>
@@ -942,7 +1301,7 @@ export default function ColaboradorDashboard() {
                   </td>
 
                   <td>
-                    <div className="cf-status-select">
+                    <div className={`cf-status-select ${getStatusClass(p.status)}`}>
                       <select
                         value={p.status}
                         onChange={(e) => handleChangeStatus(p, e.target.value)}
@@ -984,7 +1343,7 @@ export default function ColaboradorDashboard() {
                     <button
                       className="cf-btn"
                       onClick={() => openImport(p)}
-                      disabled={p.status === 'cancelado'}
+                      disabled={p.status === 'cancelado' || p.status === 'faturado'}
                     >
                       <FileSpreadsheet size={14} />
                       Importar
@@ -997,7 +1356,63 @@ export default function ColaboradorDashboard() {
         </table>
       </div>
 
-      {/* Mantive os modais exatamente na mesma lógica do seu arquivo original */}
+      {detailsOpen && detailsPedido && (
+        <div
+          className="cf-overlay"
+          onMouseDown={(e) => {
+            if (e.target.classList.contains('cf-overlay')) {
+              setDetailsOpen(false)
+              setDetailsPedido(null)
+            }
+          }}
+        >
+          <div className="cf-modal" role="dialog" aria-modal="true" style={{ maxWidth: 520 }}>
+            <div className="cf-modal-header">
+              <div>
+                <div className="cf-modal-title">Timeline do pedido</div>
+                <div className="cf-modal-sub">
+                  Pedido {detailsPedido.id} · {detailsPedido.nomeCondominio}
+                </div>
+              </div>
+
+              <button
+                className="cf-modal-close"
+                onClick={() => {
+                  setDetailsOpen(false)
+                  setDetailsPedido(null)
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="cf-modal-body">
+              <div className="cf-timeline">
+                {getTimelineItems(detailsPedido).map((item) => (
+                  <div
+                    key={item.key}
+                    className={`cf-timeline-step ${item.done ? 'done' : 'pending'} ${item.current ? 'current' : ''}`}
+                  >
+                    <div className="cf-timeline-marker">
+                      {item.done ? <CheckCircle2 size={14} /> : <span />}
+                    </div>
+
+                    <div className="cf-timeline-content">
+                      <div className="cf-timeline-top">
+                        <strong>{item.title}</strong>
+                        <span>{item.date ? fmtDate(item.date) : 'Pendente'}</span>
+                      </div>
+
+                      <p>{item.description}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {importOpen && selectedPedido && (
         <div
           className="cf-overlay"
@@ -1096,6 +1511,62 @@ export default function ColaboradorDashboard() {
               >
                 <Upload size={14} />
                 {uploading ? 'Enviando...' : 'Enviar documentos'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {cancelOpen && cancelPedido && (
+        <div
+          className="cf-overlay"
+          onMouseDown={(e) =>
+            e.target.classList.contains('cf-overlay') && closeCancelModal()
+          }
+        >
+          <div className="cf-modal" role="dialog" aria-modal="true" style={{ maxWidth: 460 }}>
+            <div className="cf-modal-header">
+              <div>
+                <div className="cf-modal-title">Cancelar faturamento</div>
+                <div className="cf-modal-sub">Pedido {cancelPedido.id}</div>
+              </div>
+
+              <button className="cf-modal-close" onClick={closeCancelModal}>
+                <X size={18} />
+              </button>
+            </div>
+
+            <div className="cf-modal-body">
+              <label className="cf-field-label" htmlFor="cancel-reason">
+                Motivo do cancelamento
+              </label>
+
+              <textarea
+                id="cancel-reason"
+                className="cf-textarea"
+                value={cancelReason}
+                onChange={(e) => {
+                  setCancelReason(e.target.value)
+                  setCancelError('')
+                }}
+                placeholder="Descreva o motivo..."
+                rows={4}
+              />
+
+              {cancelError && <div className="cf-field-error">{cancelError}</div>}
+            </div>
+
+            <div className="cf-modal-footer">
+              <button className="cf-btn secondary" onClick={closeCancelModal}>
+                Voltar
+              </button>
+
+              <button
+                className="cf-btn primary"
+                onClick={handleCancelBilling}
+                style={{ background: '#ef4444', borderColor: '#ef4444' }}
+              >
+                Confirmar cancelamento
               </button>
             </div>
           </div>
