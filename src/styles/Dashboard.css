@@ -226,8 +226,7 @@
   margin-bottom: 16px;
 }
 
-.dbi-import-icon,
-.dbi-icon {
+.dbi-import-icon {
   width: 40px;
   height: 40px;
   border-radius: 12px;
@@ -680,4 +679,12 @@
 
 .dbi-modal-info strong.money {
   color: var(--success);
+}
+
+.dbi-btn.primary .dbi-icon svg {
+  stroke: #fff;
+}
+
+.dbi-btn.primary .dbi-icon {
+  color: #fff;
 }

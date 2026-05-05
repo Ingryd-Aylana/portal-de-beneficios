@@ -4,9 +4,7 @@ const API_BASE_URL = 'https://vr-beneficios-backend-fedcorp-y5bg8.ondigitalocean
 
 function getAuthToken() {
   try {
-    const rawAuth =
-      localStorage.getItem('auth') ||
-      sessionStorage.getItem('auth')
+    const rawAuth = localStorage.getItem('auth') || sessionStorage.getItem('auth')
 
     if (rawAuth) {
       const parsed = JSON.parse(rawAuth)
@@ -19,20 +17,29 @@ function getAuthToken() {
 
   return (
     localStorage.getItem('access') ||
+    localStorage.getItem('accessToken') ||
     localStorage.getItem('token') ||
     sessionStorage.getItem('access') ||
+    sessionStorage.getItem('accessToken') ||
     sessionStorage.getItem('token') ||
     ''
   )
+}
+
+function normalizeArray(value) {
+  if (Array.isArray(value)) return value
+  if (Array.isArray(value?.results)) return value.results
+  if (Array.isArray(value?.data)) return value.data
+  if (Array.isArray(value?.pedidos)) return value.pedidos
+  if (Array.isArray(value?.importacoes)) return value.importacoes
+  return []
 }
 
 function extractFilenameFromDisposition(contentDisposition) {
   if (!contentDisposition) return null
 
   const utf8Match = contentDisposition.match(/filename\*=UTF-8''([^;]+)/i)
-  if (utf8Match?.[1]) {
-    return decodeURIComponent(utf8Match[1])
-  }
+  if (utf8Match?.[1]) return decodeURIComponent(utf8Match[1])
 
   const basicMatch = contentDisposition.match(/filename="?([^"]+)"?/i)
   return basicMatch?.[1] || null
@@ -86,18 +93,65 @@ export const faturamentoService = {
 
   async listarDocumentosPorPedido(pedidoId) {
     const response = await this.listarPedidosFuncionario()
-
-    const pedidos = Array.isArray(response)
-      ? response
-      : Array.isArray(response?.results)
-        ? response.results
-        : Array.isArray(response?.data)
-          ? response.data
-          : Array.isArray(response?.pedidos)
-            ? response.pedidos
-            : []
+    const pedidos = normalizeArray(response)
 
     return pedidos.find((pedido) => String(pedido.id) === String(pedidoId)) || null
+  },
+
+  async listarImportacoes() {
+    const response = await apiFetch('/beneficios/importacoes/', {
+      method: 'GET',
+    })
+
+    return normalizeArray(response)
+  },
+
+  async buscarUltimaImportacao() {
+    const importacoes = await this.listarImportacoes()
+
+    return (
+      importacoes
+        .filter(Boolean)
+        .sort((a, b) =>
+          String(
+            b.data_importacao ||
+              b.processed_at ||
+              b.created_at ||
+              b.updated_at ||
+              ''
+          ).localeCompare(
+            String(
+              a.data_importacao ||
+                a.processed_at ||
+                a.created_at ||
+                a.updated_at ||
+                ''
+            )
+          )
+        )[0] || null
+    )
+  },
+
+  async buscarImportacaoPorId(importacaoId) {
+    if (!importacaoId) return null
+
+    const importacoes = await this.listarImportacoes()
+
+    return (
+      importacoes.find(
+        (item) =>
+          String(item.id) === String(importacaoId) ||
+          String(item.file_upload_id) === String(importacaoId) ||
+          String(item.faturamento_id) === String(importacaoId)
+      ) || null
+    )
+  },
+
+  async criarFaturamento(payload) {
+    return apiFetch('/upload/faturamento/repetir/', {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    })
   },
 
   getExportFaturamentoUrl(params = {}) {
@@ -142,19 +196,12 @@ export const faturamentoService = {
 
     const contentType = response.headers.get('content-type') || ''
     const contentDisposition = response.headers.get('content-disposition') || ''
-
     const blob = await response.blob()
-
-    console.log('Export faturamento content-type:', contentType)
-    console.log('Export faturamento content-disposition:', contentDisposition)
-    console.log('Export faturamento blob size:', blob.size)
 
     const filenameFromHeader = extractFilenameFromDisposition(contentDisposition)
     const extension = inferExtension(contentType)
 
-    const finalName =
-      filenameFromHeader ||
-      `${nomeBase}.${extension}`
+    const finalName = filenameFromHeader || `${nomeBase}.${extension}`
 
     const blobUrl = window.URL.createObjectURL(blob)
     const link = document.createElement('a')

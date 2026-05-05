@@ -1,5 +1,7 @@
 import React from 'react'
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom'
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 import Sidebar from './components/Sidebar.jsx'
 import Header from './components/Header.jsx'
@@ -33,7 +35,6 @@ function Layout() {
     '/historico': 'Histórico',
     '/configuracoes': 'Configurações',
     '/relatorios': 'Relatórios de Benefícios',
-
     '/colaborador/dashboard': 'Dashboard Fedcorp',
     '/colaborador/importacaoDocs': 'Importação Fedcorp',
   }
@@ -49,24 +50,16 @@ function Layout() {
 
         <div className="page">
           <Routes>
-            {/* CLIENTE */}
             <Route path="/" element={<Dashboard />} />
             <Route path="/importacao" element={<Importacao />} />
             <Route path="/faturamento" element={<Faturamento />} />
-            <Route
-              path="/faturamento/repetir"
-              element={<FaturamentoFormulario modo="repetir" />}
-            />
-            <Route
-              path="/faturamento/novo"
-              element={<FaturamentoFormulario modo="novo" />}
-            />
+            <Route path="/faturamento/repetir" element={<FaturamentoFormulario modo="repetir" />} />
+            <Route path="/faturamento/novo" element={<FaturamentoFormulario modo="novo" />} />
             <Route path="/pendentes" element={<Pendentes />} />
             <Route path="/historico" element={<Historico />} />
             <Route path="/configuracoes" element={<ConfiguracaoCondominios />} />
             <Route path="/relatorios" element={<RelatoriosBeneficios />} />
 
-            {/* COLABORADOR FEDCORP */}
             <Route
               path="/colaborador/dashboard"
               element={
@@ -75,12 +68,9 @@ function Layout() {
                 </ProtectedRoute>
               }
             />
-            <Route
-              path="/colaborador/importacaoDocs"
-              element={<ImportacaoDocs />}
-            />
 
-            {/* FALLBACK */}
+            <Route path="/colaborador/importacaoDocs" element={<ImportacaoDocs />} />
+
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
@@ -104,6 +94,17 @@ export default function App() {
           }
         />
       </Routes>
+
+      <ToastContainer
+        position="top-right"
+        autoClose={3500}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        pauseOnHover
+        draggable
+        theme="colored"
+      />
     </AuthProvider>
   )
 }
