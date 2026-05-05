@@ -3,6 +3,7 @@ import FileUpload from '../../components/FileUpload'
 import { PencilLine, Trash2, Check, X as XIcon, Eye } from 'lucide-react'
 import '../../styles/Importacao.css'
 import { uploadService } from '../../services/uploadService'
+import { toast } from 'react-toastify'
 
 function Modal({ open, title, onClose, children }) {
   if (!open) return null
@@ -53,7 +54,6 @@ function getCpf(row) {
   return String(row?.cpf || row?.cpf_func || row?.cpf_funcionario || row?.CPF || '').trim()
 }
 
-
 function getRowKey(row) {
   const cpf = getCpf(row)
   if (cpf) return `${getCondominio(row)}::${getNomeColaborador(row)}::${cpf}`
@@ -65,6 +65,42 @@ function formatCurrency(value) {
     style: 'currency',
     currency: 'BRL',
   })
+}
+
+function formatDateBR(value) {
+  if (!value) return '-'
+
+  const raw = String(value).trim()
+  if (!raw) return '-'
+
+  if (/^\d{2}\/\d{2}\/\d{4}$/.test(raw)) return raw
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(raw)) {
+    const [y, m, d] = raw.split('T')[0].split('-')
+    return `${d}/${m}/${y}`
+  }
+
+  return raw
+}
+
+function formatCompetenciaBR(mes, ano) {
+  if (!mes && !ano) return '-'
+
+  const mesFormatado = String(mes || '').padStart(2, '0')
+  return `${mesFormatado}/${ano || ''}`
+}
+
+function getSummaryBackend(data) {
+  return data?.data_to_backend?.summary || data?.summary || {}
+}
+
+function getMovimentacoesBackend(data) {
+  return (
+    data?.data_to_backend?.movimentacoes_detalhada ||
+    data?.movimentacoes_detalhada ||
+    data?.movimentacoes ||
+    []
+  )
 }
 
 function normalizeText(value) {
@@ -105,7 +141,6 @@ function isValidCPF(value) {
 
   return remainder === Number(cpf[10])
 }
-
 
 function getNomeProduto(item) {
   return (
@@ -408,63 +443,113 @@ export default function Importacao() {
   })
 
   async function handleResult({ file }) {
-  try {
-    const response = await uploadService.uploadFile(file)
-    console.log('UPLOAD RESPONSE:', response)
+    try {
+      const response = await uploadService.uploadFile(file)
+      console.log('UPLOAD RESPONSE:', response)
 
-    const id = 'IMP-' + (response?.file_upload_id || Date.now())
-    const tipo = file.name.toLowerCase().includes('fat') ? 'faturamento' : 'compra'
+      const id = 'IMP-' + (response?.file_upload_id || Date.now())
+      const tipo = file.name.toLowerCase().includes('fat') ? 'faturamento' : 'compra'
 
-    const movimentacoes =
-      response?.data_to_backend?.movimentacoes_detalhada ||
-      response?.movimentacoes_detalhada ||
-      response?.movimentacoes ||
-      []
+      const movimentacoes = getMovimentacoesBackend(response)
 
-    console.log('movimentacoes_detalhada:', movimentacoes)
+      console.log('movimentacoes_detalhada:', movimentacoes)
 
-    const previewRowsBackend =
-      response?.summary?.total_por_beneficiario ||
-      response?.data_to_backend?.summary?.total_por_beneficiario ||
-      response?.total_por_beneficiario ||
-      response?.resumo ||
-      response?.preview ||
-      []
+      const previewRowsBackend =
+        response?.summary?.total_por_beneficiario ||
+        response?.data_to_backend?.summary?.total_por_beneficiario ||
+        response?.total_por_beneficiario ||
+        response?.resumo ||
+        response?.preview ||
+        []
 
-    console.log('previewRowsBackend:', previewRowsBackend)
+      console.log('previewRowsBackend:', previewRowsBackend)
 
-    const previewRows =
-      Array.isArray(previewRowsBackend) && previewRowsBackend.length > 0
-        ? previewRowsBackend
-        : Array.isArray(movimentacoes) && movimentacoes.length > 0
-        ? buildPreviewRowsFromMovimentacoes(movimentacoes)
-        : []
+      const previewRows =
+        Array.isArray(previewRowsBackend) && previewRowsBackend.length > 0
+          ? previewRowsBackend
+          : Array.isArray(movimentacoes) && movimentacoes.length > 0
+          ? buildPreviewRowsFromMovimentacoes(movimentacoes)
+          : []
 
-    console.log('previewRows final:', previewRows)
+      console.log('previewRows final:', previewRows)
 
-    const parsed = enrichRowsWithBenefits(previewRows, movimentacoes)
-    console.log('parsed rows:', parsed)
+      const parsed = enrichRowsWithBenefits(previewRows, movimentacoes)
+      console.log('parsed rows:', parsed)
 
-    const errosImportacao =
-      response?.errors ||
-      response?.invalid_rows ||
-      response?.rejeitados ||
-      response?.linhas_com_erro ||
-      response?.summary?.errors ||
-      response?.data_to_backend?.summary?.errors ||
-      []
+      const errosImportacao =
+        response?.errors ||
+        response?.invalid_rows ||
+        response?.rejeitados ||
+        response?.linhas_com_erro ||
+        response?.summary?.errors ||
+        response?.data_to_backend?.summary?.errors ||
+        []
 
-    const semPreview = !Array.isArray(parsed) || parsed.length === 0
+      const semPreview = !Array.isArray(parsed) || parsed.length === 0
 
-    if (semPreview) {
-      console.warn('Importação sem preview. Possíveis erros:', errosImportacao)
+      if (semPreview) {
+        console.warn('Importação sem preview. Possíveis erros:', errosImportacao)
+
+        setData(response)
+        setLote({
+          id: null,
+          arquivo: null,
+          tipo: null,
+          rows: [],
+          excluidosPorColab: new Set(),
+        })
+
+        setEditingIndex(null)
+        setEditValue('')
+        setDetailsOpen(false)
+        setDetailsTitle('')
+        setDetailsBenefits([])
+        setConfirmDeleteOpen(false)
+        setColaboradorParaExcluir(null)
+        setReviewOpen(false)
+        setMostrarSomenteAcima2500(false)
+        setReviewData({
+          totalFuncionarios: 0,
+          totalMovimentacoes: 0,
+          valorTotalBeneficios: 0,
+          periodoInicio: '',
+          periodoFim: '',
+          competenciaMes: '',
+          competenciaAno: '',
+          vencimento: '',
+        })
+
+        let mensagemErro =
+          response?.detail ||
+          response?.message ||
+          response?.error ||
+          'Nenhum registro válido foi encontrado no arquivo. Verifique CPF e demais campos obrigatórios.'
+
+        if (Array.isArray(errosImportacao) && errosImportacao.length > 0) {
+          const primeiroErro =
+            typeof errosImportacao[0] === 'string'
+              ? errosImportacao[0]
+              : errosImportacao[0]?.message ||
+                errosImportacao[0]?.erro ||
+                JSON.stringify(errosImportacao[0])
+
+          mensagemErro = `Importação rejeitada. ${primeiroErro}`
+        }
+
+        toast.error(mensagemErro)
+
+        return {
+          success: false,
+        }
+      }
 
       setData(response)
+
       setLote({
-        id: null,
-        arquivo: null,
-        tipo: null,
-        rows: [],
+        id,
+        arquivo: file.name,
+        tipo,
+        rows: parsed,
         excluidosPorColab: new Set(),
       })
 
@@ -488,76 +573,25 @@ export default function Importacao() {
         vencimento: '',
       })
 
-      let mensagemErro =
-        response?.detail ||
-        response?.message ||
-        response?.error ||
-        'Nenhum registro válido foi encontrado no arquivo. Verifique CPF e demais campos obrigatórios.'
+      toast.success(response?.detail || 'Importação realizada com sucesso')
 
-      if (Array.isArray(errosImportacao) && errosImportacao.length > 0) {
-        const primeiroErro =
-          typeof errosImportacao[0] === 'string'
-            ? errosImportacao[0]
-            : errosImportacao[0]?.message ||
-              errosImportacao[0]?.erro ||
-              JSON.stringify(errosImportacao[0])
-
-        mensagemErro = `Importação rejeitada. ${primeiroErro}`
+      return {
+        success: true,
       }
+    } catch (error) {
+      const errorMessage = error.message.includes('API Error')
+        ? error.message.split('API Error: ')[1]
+        : 'Erro desconhecido na comunicação com o servidor.'
+
+      console.error('Erro no processamento da importação:', error)
+
+      toast.error(errorMessage)
 
       return {
         success: false,
-        message: mensagemErro,
       }
     }
-
-    setData(response)
-
-    setLote({
-      id,
-      arquivo: file.name,
-      tipo,
-      rows: parsed,
-      excluidosPorColab: new Set(),
-    })
-
-    setEditingIndex(null)
-    setEditValue('')
-    setDetailsOpen(false)
-    setDetailsTitle('')
-    setDetailsBenefits([])
-    setConfirmDeleteOpen(false)
-    setColaboradorParaExcluir(null)
-    setReviewOpen(false)
-    setMostrarSomenteAcima2500(false)
-    setReviewData({
-      totalFuncionarios: 0,
-      totalMovimentacoes: 0,
-      valorTotalBeneficios: 0,
-      periodoInicio: '',
-      periodoFim: '',
-      competenciaMes: '',
-      competenciaAno: '',
-      vencimento: '',
-    })
-
-    return {
-      success: true,
-      message: response?.detail || 'Importação concluída com sucesso.',
-    }
-  } catch (error) {
-    const errorMessage = error.message.includes('API Error')
-      ? error.message.split('API Error: ')[1]
-      : 'Erro desconhecido na comunicação com o servidor.'
-
-    console.error('Erro no processamento da importação:', error)
-
-    return {
-      success: false,
-      message: errorMessage,
-    }
   }
-}
 
   const rowsAtivas = useMemo(() => {
     if (!lote?.rows?.length) return []
@@ -727,8 +761,9 @@ export default function Importacao() {
       return
     }
 
+    const summary = getSummaryBackend(data)
     const excluidosManualmenteSet = lote.excluidosPorColab || new Set()
-    const listaOriginal = data.data_to_backend.movimentacoes_detalhada || []
+    const listaOriginal = getMovimentacoesBackend(data)
 
     const previewMap = new Map(
       linhasValidadas.map((item) => {
@@ -796,14 +831,48 @@ export default function Importacao() {
     })
 
     setReviewData({
-      totalFuncionarios: funcionariosUnicos.size,
-      totalMovimentacoes,
-      valorTotalBeneficios: Number(valorTotalBeneficios.toFixed(2)),
-      periodoInicio: formEnvio.periodoInicio,
-      periodoFim: formEnvio.periodoFim,
-      competenciaMes: formEnvio.competenciaMes,
-      competenciaAno: formEnvio.competenciaAno,
-      vencimento: formEnvio.vencimento,
+      totalFuncionarios:
+        summary.total_funcionarios ||
+        summary.total_colaboradores ||
+        summary.total_beneficiarios ||
+        funcionariosUnicos.size,
+
+      totalMovimentacoes:
+        summary.total_movimentacoes ||
+        summary.total_registros ||
+        listaFiltrada.length ||
+        totalMovimentacoes,
+
+      valorTotalBeneficios: Number(
+        summary.valor_total_beneficios ||
+          summary.valor_total ||
+          summary.valorTotal ||
+          valorTotalBeneficios ||
+          0
+      ),
+
+      periodoInicio:
+        summary.periodo_inicio ||
+        summary.vigencia_inicio ||
+        formEnvio.periodoInicio,
+
+      periodoFim:
+        summary.periodo_fim ||
+        summary.vigencia_fim ||
+        formEnvio.periodoFim,
+
+      competenciaMes:
+        summary.competencia_mes ||
+        formEnvio.competenciaMes,
+
+      competenciaAno:
+        summary.competencia_ano ||
+        formEnvio.competenciaAno,
+
+      vencimento:
+        summary.vencimento ||
+        summary.data_vencimento ||
+        formEnvio.vencimento,
     })
 
     setModalOpen(false)
@@ -852,7 +921,7 @@ export default function Importacao() {
     console.log('PRIMEIRA MOVIMENTACAO ORIGINAL:', listaOriginal?.[0])
 
     if (!vencimentoFormatado) {
-      alert('Preencha um vencimento válido antes de confirmar o envio.')
+      toast.warning('Preencha um vencimento válido antes de continuar.')
       return
     }
 
@@ -949,12 +1018,16 @@ export default function Importacao() {
     try {
       const responseEnvio = await uploadService.confirmUpload(dataParaEnvio.data_to_backend)
       console.log('Envio concluído:', responseEnvio)
+      toast.success(responseEnvio?.detail || responseEnvio?.message || 'Lote enviado com sucesso!')
       setReviewOpen(false)
       setModalOpen(false)
-      window.location.href = '/'
+
+      setTimeout(() => {
+        window.location.href = '/'
+      }, 1500)
     } catch (error) {
       console.error('Erro no envio do lote:', error)
-      alert(`Erro no envio do lote: ${error.message}`)
+      toast.error(`Erro no envio do lote: ${error.message}`)
     }
   }
 
@@ -1337,13 +1410,13 @@ export default function Importacao() {
 
           <div className="review-details">
             <div>
-              <strong>Período:</strong> {reviewData.periodoInicio} até {reviewData.periodoFim}
+              <strong>Período:</strong> {formatDateBR(reviewData.periodoInicio)} até {formatDateBR(reviewData.periodoFim)}
             </div>
             <div>
-              <strong>Competência:</strong> {reviewData.competenciaMes}/{reviewData.competenciaAno}
+              <strong>Competência:</strong> {formatCompetenciaBR(reviewData.competenciaMes, reviewData.competenciaAno)}
             </div>
             <div>
-              <strong>Vencimento:</strong> {reviewData.vencimento}
+              <strong>Vencimento:</strong> {formatDateBR(reviewData.vencimento)}
             </div>
           </div>
 

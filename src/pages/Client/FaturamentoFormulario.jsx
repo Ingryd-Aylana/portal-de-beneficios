@@ -31,41 +31,212 @@ const formatDateBR = (dateStr) => {
   }
 
   const date = new Date(`${onlyDate}T00:00:00`)
-
   if (Number.isNaN(date.getTime())) return '—'
 
   return date.toLocaleDateString('pt-BR')
 }
 
-const getCondominios = (data) =>
-  Array.isArray(data?.condominios) ? data.condominios : []
+const toArray = (value) => {
+  if (Array.isArray(value)) return value
+  if (Array.isArray(value?.results)) return value.results
+  if (Array.isArray(value?.data)) return value.data
+  if (Array.isArray(value?.importacoes)) return value.importacoes
+  return []
+}
+
+const parseMaybeJson = (value) => {
+  if (!value) return null
+  if (typeof value === 'object') return value
+
+  try {
+    return JSON.parse(value)
+  } catch {
+    return null
+  }
+}
+
+const getDadosRequisicao = (data) =>
+  parseMaybeJson(data?.dados_requisicao) ||
+  parseMaybeJson(data?.raw?.ultima?.dados_requisicao) ||
+  parseMaybeJson(data?.raw?.metaUltima?.dados_requisicao) ||
+  {}
+
+const getCondominios = (data) => {
+  const dadosReq = getDadosRequisicao(data)
+
+  if (Array.isArray(data?.condominios) && data.condominios.length) {
+    return data.condominios
+  }
+
+  if (Array.isArray(dadosReq?.condominios) && dadosReq.condominios.length) {
+    return dadosReq.condominios
+  }
+
+  if (Array.isArray(data?.raw?.ultima?.condominios) && data.raw.ultima.condominios.length) {
+    return data.raw.ultima.condominios
+  }
+
+  if (
+    Array.isArray(data?.raw?.metaUltima?.condominios) &&
+    data.raw.metaUltima.condominios.length
+  ) {
+    return data.raw.metaUltima.condominios
+  }
+
+  return []
+}
 
 const getFuncionarios = (data) =>
-  getCondominios(data).flatMap((condo) =>
-    Array.isArray(condo?.funcionarios) ? condo.funcionarios : []
-  )
+  getCondominios(data).flatMap((condo) => {
+    if (Array.isArray(condo?.funcionarios)) return condo.funcionarios
+    if (Array.isArray(condo?.colaboradores)) return condo.colaboradores
+    return []
+  })
 
 const getMovimentacoes = (data) =>
-  getFuncionarios(data).flatMap((func) =>
-    Array.isArray(func?.movimentacoes) ? func.movimentacoes : []
-  )
+  getFuncionarios(data).flatMap((func) => {
+    if (Array.isArray(func?.movimentacoes)) return func.movimentacoes
+    if (Array.isArray(func?.beneficios)) return func.beneficios
+    return []
+  })
 
-const getValorTotal = (data) =>
-  getMovimentacoes(data).reduce(
-    (sum, mov) => sum + Number(mov?.valor || 0),
+const getValorTotal = (data) => {
+  const dadosReq = getDadosRequisicao(data)
+
+  const totalMovimentacoes = getMovimentacoes(data).reduce(
+    (sum, mov) =>
+      sum +
+      Number(
+        mov?.valor ||
+          mov?.valor_total ||
+          mov?.valor_beneficio ||
+          mov?.total ||
+          0
+      ),
     0
   )
 
+  return Number(
+    totalMovimentacoes ||
+      data?.resumo_anterior?.valorTotal ||
+      data?.resumo_anterior?.valor_total ||
+      data?.valor_total ||
+      data?.total ||
+      data?.valor_total_beneficios ||
+      data?.summary?.valor_total_beneficios ||
+      data?.summary?.total ||
+      data?.resumo?.valor_total_beneficios ||
+      data?.resumo?.total ||
+      dadosReq?.valor_total_beneficios ||
+      dadosReq?.valor_total ||
+      dadosReq?.total ||
+      dadosReq?.total_geral ||
+      dadosReq?.summary?.valor_total_beneficios ||
+      dadosReq?.summary?.total ||
+      dadosReq?.resumo?.valor_total_beneficios ||
+      dadosReq?.resumo?.total ||
+      data?.raw?.ultima?.valor_total ||
+      data?.raw?.ultima?.total ||
+      data?.raw?.ultima?.summary?.valor_total_beneficios ||
+      data?.raw?.metaUltima?.valor_total ||
+      data?.raw?.metaUltima?.total ||
+      data?.raw?.metaUltima?.summary?.valor_total_beneficios ||
+      0
+  )
+}
+
+const getQtdCondominios = (data) => {
+  const dadosReq = getDadosRequisicao(data)
+
+  return Number(
+    getCondominios(data).length ||
+      data?.resumo_anterior?.condominios ||
+      data?.total_condominios ||
+      data?.qtd_condominios ||
+      data?.summary?.total_condominios ||
+      dadosReq?.total_condominios ||
+      dadosReq?.qtd_condominios ||
+      dadosReq?.summary?.total_condominios ||
+      data?.raw?.metaUltima?.total_condominios ||
+      0
+  )
+}
+
+const getQtdColaboradores = (data) => {
+  const dadosReq = getDadosRequisicao(data)
+
+  return Number(
+    getFuncionarios(data).length ||
+      data?.resumo_anterior?.colaboradores ||
+      data?.total_funcionarios ||
+      data?.qtd_funcionarios ||
+      data?.total_colaboradores ||
+      data?.registros_processados ||
+      data?.summary?.total_funcionarios ||
+      data?.summary?.total_colaboradores ||
+      dadosReq?.total_funcionarios ||
+      dadosReq?.qtd_funcionarios ||
+      dadosReq?.total_colaboradores ||
+      dadosReq?.summary?.total_funcionarios ||
+      dadosReq?.summary?.total_colaboradores ||
+      data?.raw?.metaUltima?.registros_processados ||
+      data?.raw?.ultima?.registros_processados ||
+      0
+  )
+}
+
+const getQtdMovimentacoes = (data) => {
+  const dadosReq = getDadosRequisicao(data)
+
+  return Number(
+    getMovimentacoes(data).length ||
+      data?.resumo_anterior?.movimentacoes ||
+      data?.total_movimentacoes ||
+      data?.qtd_movimentacoes ||
+      data?.registros_processados ||
+      data?.summary?.total_movimentacoes ||
+      dadosReq?.total_movimentacoes ||
+      dadosReq?.qtd_movimentacoes ||
+      dadosReq?.summary?.total_movimentacoes ||
+      data?.raw?.metaUltima?.registros_processados ||
+      data?.raw?.ultima?.registros_processados ||
+      0
+  )
+}
+
 const getPreviewPeriodo = (data) => {
-  if (data?.vigencia_inicio && data?.vigencia_fim) {
-    return `${formatDateBR(data.vigencia_inicio)} até ${formatDateBR(data.vigencia_fim)}`
+  const inicio =
+    data?.vigencia_inicio ||
+    data?.raw?.metaUltima?.vigencia_inicio ||
+    data?.raw?.ultima?.vigencia_inicio
+
+  const fim =
+    data?.vigencia_fim ||
+    data?.raw?.metaUltima?.vigencia_fim ||
+    data?.raw?.ultima?.vigencia_fim
+
+  if (inicio && fim) {
+    return `${formatDateBR(inicio)} até ${formatDateBR(fim)}`
   }
 
   return '—'
 }
 
+const getPreviewVencimento = (data) =>
+  data?.data_vencimento ||
+  data?.vencimento ||
+  data?.raw?.metaUltima?.data_vencimento ||
+  data?.raw?.ultima?.data_vencimento ||
+  ''
+
 const getPreviewId = (preview) =>
-  preview?.id || preview?.file_upload_id || preview?.importacao_id || null
+  preview?.id ||
+  preview?.file_upload_id ||
+  preview?.importacao_id ||
+  preview?.faturamento_id ||
+  preview?.raw?.metaUltima?.id ||
+  preview?.raw?.ultima?.id ||
+  null
 
 export default function FaturamentoFormulario({ modo = 'novo' }) {
   const navigate = useNavigate()
@@ -88,16 +259,71 @@ export default function FaturamentoFormulario({ modo = 'novo' }) {
       setLoading(true)
       setError('')
 
-      const dadosRecebidos = location.state?.ultimaImportacao
-      const dados =
-        dadosRecebidos || (await entebenService.repetirUltimoFaturamento())
+      const dadosState = location.state?.ultimaImportacao || null
 
-      if (!dados) {
+      const [ultimaImportacao, historicoData] = await Promise.all([
+        entebenService.getUltimaImportacao(),
+        entebenService.getImportacoes(),
+      ])
+
+      const historico = toArray(historicoData)
+      const metaUltima = historico[0] || null
+
+      const dados = {
+        ...(dadosState || {}),
+        ...(metaUltima || {}),
+        ...(ultimaImportacao || {}),
+        raw: {
+          state: dadosState,
+          metaUltima,
+          ultima: ultimaImportacao,
+        },
+      }
+
+      const condominios =
+        getCondominios(ultimaImportacao).length > 0
+          ? getCondominios(ultimaImportacao)
+          : getCondominios(metaUltima).length > 0
+            ? getCondominios(metaUltima)
+            : getCondominios(dadosState)
+
+      const dadosCompletos = {
+        ...dados,
+        condominios,
+        resumo_anterior: {
+          condominios:
+            condominios.length ||
+            getQtdCondominios(ultimaImportacao) ||
+            getQtdCondominios(metaUltima) ||
+            getQtdCondominios(dadosState),
+
+          colaboradores:
+            getQtdColaboradores({ ...dados, condominios }) ||
+            getQtdColaboradores(ultimaImportacao) ||
+            getQtdColaboradores(metaUltima) ||
+            getQtdColaboradores(dadosState),
+
+          movimentacoes:
+            getQtdMovimentacoes({ ...dados, condominios }) ||
+            getQtdMovimentacoes(ultimaImportacao) ||
+            getQtdMovimentacoes(metaUltima) ||
+            getQtdMovimentacoes(dadosState),
+
+          valorTotal:
+            getValorTotal({ ...dados, condominios }) ||
+            getValorTotal(ultimaImportacao) ||
+            getValorTotal(metaUltima) ||
+            getValorTotal(dadosState),
+        },
+      }
+
+      if (!ultimaImportacao && !metaUltima && !dadosState) {
         setError('Nenhuma movimentação anterior encontrada.')
         return
       }
 
-      setPreview(dados)
+      console.log('PREVIEW FATURAMENTO ANTERIOR:', dadosCompletos)
+      setPreview(dadosCompletos)
     } catch (error) {
       console.error('Erro ao carregar última movimentação:', error)
       setError('Não foi possível carregar a última movimentação.')
@@ -117,10 +343,21 @@ export default function FaturamentoFormulario({ modo = 'novo' }) {
     }
 
     return {
-      condominios: getCondominios(preview).length,
-      colaboradores: getFuncionarios(preview).length,
-      movimentacoes: getMovimentacoes(preview).length,
-      valorTotal: getValorTotal(preview),
+      condominios:
+        Number(preview?.resumo_anterior?.condominios) ||
+        getQtdCondominios(preview),
+
+      colaboradores:
+        Number(preview?.resumo_anterior?.colaboradores) ||
+        getQtdColaboradores(preview),
+
+      movimentacoes:
+        Number(preview?.resumo_anterior?.movimentacoes) ||
+        getQtdMovimentacoes(preview),
+
+      valorTotal:
+        Number(preview?.resumo_anterior?.valorTotal) ||
+        getValorTotal(preview),
     }
   }, [preview])
 
@@ -138,21 +375,10 @@ export default function FaturamentoFormulario({ modo = 'novo' }) {
       return 'Nenhuma base de faturamento encontrada.'
     }
 
-    if (!form.competencia.trim()) {
-      return 'Preencha a competência.'
-    }
-
-    if (!form.referencia.trim()) {
-      return 'Preencha a referência.'
-    }
-
-    if (!form.diasUteis.trim()) {
-      return 'Preencha a quantidade de dias úteis.'
-    }
-
-    if (!form.vencimento.trim()) {
-      return 'Preencha o vencimento.'
-    }
+    if (!form.competencia.trim()) return 'Preencha a competência.'
+    if (!form.referencia.trim()) return 'Preencha a referência.'
+    if (!form.diasUteis.trim()) return 'Preencha a quantidade de dias úteis.'
+    if (!form.vencimento.trim()) return 'Preencha o vencimento.'
 
     return ''
   }
@@ -183,24 +409,11 @@ export default function FaturamentoFormulario({ modo = 'novo' }) {
         importacao_id: importacaoId,
         faturamento_id: importacaoId,
 
-        condominios: preview?.condominios || [],
+        resumo_anterior: previewResumo,
+        condominios: getCondominios(preview),
       }
 
       console.log('PAYLOAD FINAL PARA BACKEND:', payload)
-
-      /*
-        Quando o backend confirmar o endpoint POST, entra aqui:
-
-        await entebenService.criarFaturamento(payload)
-
-        Exemplo no service:
-        criarFaturamento: async (payload) => {
-          return apiFetch('/ROTA_CONFIRMADA_PELO_BACKEND/', {
-            method: 'POST',
-            body: payload,
-          })
-        }
-      */
 
       alert('Payload pronto para envio ao backend. Confira o console.')
     } catch (error) {
@@ -243,9 +456,7 @@ export default function FaturamentoFormulario({ modo = 'novo' }) {
                     <h3>Preview do mês anterior</h3>
                     <p>
                       Base:{' '}
-                      <strong>
-                        IMP-{getPreviewId(preview) || 'última'}
-                      </strong>
+                      <strong>IMP-{getPreviewId(preview) || 'última'}</strong>
                     </p>
                   </div>
                 </div>
@@ -283,10 +494,10 @@ export default function FaturamentoFormulario({ modo = 'novo' }) {
                   <br />
                   <br />
 
-                  {preview?.data_vencimento && (
+                  {getPreviewVencimento(preview) && (
                     <span>
                       Vencimento anterior:{' '}
-                      <strong>{formatDateBR(preview.data_vencimento)}</strong>
+                      <strong>{formatDateBR(getPreviewVencimento(preview))}</strong>
                     </span>
                   )}
                 </div>
